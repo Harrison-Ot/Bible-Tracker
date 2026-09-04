@@ -24,7 +24,7 @@ export default function Login({ status, canResetPassword }: Props) {
             <Form
                 {...store.form()}
                 resetOnSuccess={['password']}
-                className="flex flex-col gap-6"
+                className="flex flex-col gap-6 bg-[#D9F2F2] md:rounded-md p-6 text-[#1b1b18] border-[#1a4c4b] dark:bg-[#0a0a0a]"
             >
                 {({ processing, errors }) => (
                     <>
@@ -79,7 +79,7 @@ export default function Login({ status, canResetPassword }: Props) {
 
                             <Button
                                 type="submit"
-                                className="mt-4 w-full"
+                                className="mt-4 bg-[#277271] w-full"
                                 tabIndex={4}
                                 disabled={processing}
                                 data-test="login-button"
