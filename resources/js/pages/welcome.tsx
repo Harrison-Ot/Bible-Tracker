@@ -36,7 +36,11 @@ export default function Welcome() {
                         )}
                     </nav>
                 </header>
-                <div className="flex w-full items-center justify-center opacity-100 transition-opacity duration-750 lg:grow starting:opacity-0">
+                <div className="flex w-full mx-auto opacity-100 transition-opacity duration-750 lg:grow starting:opacity-0">
+                    <div className="mx-auto flex w-full max-w-4xl flex-row items-center justify-center gap-6 text-center lg:gap-8">
+                       <div><h1 className="text-7xl font-bold">Welcome to Bible Tracker</h1></div>
+                       <div><img src="/images/bible-tracker-logo.png" alt="Bible Tracker Logo" /></div>
+                    </div>
                     
                 </div>
                 <div className="hidden h-14.5 lg:block"></div>
