@@ -21,7 +21,7 @@ export default function Register({ passwordRules }: Props) {
                 {...store.form()}
                 resetOnSuccess={['password', 'password_confirmation']}
                 disableWhileProcessing
-                className="flex flex-col gap-6"
+                className="flex bg-[#D9F2F2] flex-col gap-6 text-[#1b1b18] border-[#1a4c4b] dark:bg-[#0a0a0a] md:p-10 md:rounded-md"
             >
                 {({ processing, errors }) => (
                     <>
