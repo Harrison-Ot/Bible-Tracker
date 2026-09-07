@@ -76,6 +76,9 @@ export default function LogReadingForm() {
                     className="mt-1 w-full rounded-md border-[#D9E3D3] text-sm focus:border-[#2F6B3C] focus:ring-[#2F6B3C]"
                 />
             </div>
+            <div><a href={`/read/${data.book}/${data.chapter}`} className="text-sm text-[#2F6B3C] underline">
+    Read this chapter first
+</a></div>
 
             <button
                 type="submit"
