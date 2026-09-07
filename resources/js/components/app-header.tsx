@@ -45,6 +45,11 @@ const mainNavItems: NavItem[] = [
         href: dashboard(),
         icon: LayoutGrid,
     },
+    {
+        title: 'Bible',
+        href: 'bible()',
+        icon: BookOpen,
+    },
 ];
 
 const rightNavItems: NavItem[] = [
