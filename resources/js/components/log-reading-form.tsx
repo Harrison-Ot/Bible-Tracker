@@ -58,7 +58,7 @@ export default function LogReadingForm() {
                         min={1}
                         value={data.chapter}
                         onChange={(e) => setData('chapter', e.target.value)}
-                        className="mt-1 w-full rounded-md border-[#D9E3D3] text-sm focus:border-[#2F6B3C] focus:ring-[#2F6B3C]"
+                        className="mt-1 w-full rounded-md border-[#D9E3D3] text-sm focus:border-black focus:ring-[#2F6B3C]"
                     />
                     {errors.chapter && <p className="mt-1 text-xs text-red-600">{errors.chapter}</p>}
                 </div>
