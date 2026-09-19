@@ -11,7 +11,7 @@ interface DailyVerseData {
 const FALLBACK_VERSES: DailyVerseData[] = [
     { reference: 'Psalm 46:1', text: 'God is our refuge and strength, a very present help in trouble.', translation: 'KJV' },
     { reference: 'Proverbs 3:5', text: 'Trust in the Lord with all thine heart; and lean not unto thine own understanding.', translation: 'KJV' },
-    { reference: 'Philippians 4:13', text: 'I can do all things through Christ which strengtheneth me.', translation: 'KJV' },
+    { reference: 'Philippians 4:13', text: 'I can do all things through Christ who strengtheneth me.', translation: 'KJV' },
 ];
 
 export default function DailyVerse() {
@@ -22,7 +22,7 @@ export default function DailyVerse() {
     useEffect(() => {
         let cancelled = false;
 
-        fetch('/api/daily-verse')
+        fetch('/api/bible')
             .then((res) => {
                 if (!res.ok) throw new Error('Request failed');
                 return res.json();
