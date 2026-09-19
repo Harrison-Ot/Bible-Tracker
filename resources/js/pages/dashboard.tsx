@@ -4,6 +4,7 @@ import ReadingHeatmap from '@/components/reading-heatmap';
 import LogReadingForm from '@/components/log-reading-form';
 import StreakSummary from '@/components/streak-summary';
 import ProfileCard from '@/components/profile-card';
+import DailyVerse from '@/components/dailyverse';
 
 interface DashboardProps {
     readingCounts: Record<string, number>;
@@ -20,6 +21,7 @@ export default function Dashboard() {
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <div className="grid auto-rows-min gap-4 md:grid-cols-3">
                     <ProfileCard />
+                    <DailyVerse />
                 </div>
 
                 <div>
