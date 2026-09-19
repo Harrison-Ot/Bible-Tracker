@@ -93,7 +93,7 @@ export default function LogReadingForm() {
 
             {data.book && data.chapter && (
                 <a
-                    href={`/read/${data.book}/${data.chapter}`}
+                    href={`/bible/${data.book}/${data.chapter}`}
                     className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-[#2F6B3C] hover:text-[#153D1D] hover:underline"
                 >
                     Read {data.book} {data.chapter} first →
