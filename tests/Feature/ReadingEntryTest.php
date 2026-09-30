@@ -18,8 +18,26 @@ it('lets an authenticated user log a reading entry', function () {
         'user_id' => $user->id,
         'book' => 'John',
         'chapter' => 3,
-        'read_on' => today()->toDateString(),
+        'read_on' => today()->toDateTimeString(),
     ]);
+});
+
+it('returns to the dashboard with the updated reading count after logging a chapter', function () {
+    $user = User::factory()->create();
+
+    $response = $this->actingAs($user)->post('/reading-entries', [
+        'book' => 'John',
+        'chapter' => 3,
+        'translation' => 'web',
+    ]);
+
+    $response->assertRedirect(route('dashboard'));
+
+    $this->get(route('dashboard'))
+        ->assertInertia(fn ($page) => $page
+            ->component('dashboard')
+            ->where('readingCounts.'.today()->format('Y-m-d'), 1)
+        );
 });
 
 it('rejects a reading entry with an invalid chapter', function () {

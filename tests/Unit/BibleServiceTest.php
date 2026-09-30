@@ -2,6 +2,7 @@
 
 use App\Services\BibleService;
 use Illuminate\Support\Facades\Http;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 it('fetches and caches a chapter from the bible api', function () {
     Http::fake([
@@ -30,8 +31,10 @@ it('aborts with a 502 when the bible api is unreachable', function () {
 
     $service = new BibleService();
 
-    expect(fn () => $service->getChapter('web', 'JHN', 3))
-        ->toThrow(function ($e) {
-            expect($e->getStatusCode())->toBe(502);
-        });
+    try {
+        $service->getChapter('web', 'JHN', 3);
+        test()->fail('Expected the Bible API failure to abort the request.');
+    } catch (HttpException $exception) {
+        expect($exception->getStatusCode())->toBe(502);
+    }
 });

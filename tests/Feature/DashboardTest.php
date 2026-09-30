@@ -5,7 +5,6 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 test('guests are redirected to the login page', function () {
@@ -37,6 +36,7 @@ it('returns reading counts keyed by date for the authenticated user', function (
         ->where('currentStreak', 2)
     );
 });
+
 it('does not show another user\'s reading entries on the dashboard', function () {
     $user = User::factory()->create();
     $other = User::factory()->create();
@@ -46,6 +46,6 @@ it('does not show another user\'s reading entries on the dashboard', function ()
     $response = $this->actingAs($user)->get('/dashboard');
 
     $response->assertInertia(fn ($page) => $page
-        ->where('readingCounts.' . today()->format('Y-m-d'), null)
+        ->where('readingCounts', [])
     );
 });

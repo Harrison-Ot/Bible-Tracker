@@ -1,10 +1,22 @@
-import { useForm } from '@inertiajs/react';
+import { Link, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
+import { show } from '@/actions/App/Http/Controllers/BibleController';
+import { store } from '@/actions/App/Http/Controllers/ReadingEntryController';
 
 const BOOKS = [
-    'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy',
-    'Matthew', 'Mark', 'Luke', 'John', 'Acts', 'Romans',
-    'Psalms', 'Proverbs',
+    { name: 'Genesis', id: 'GEN' },
+    { name: 'Exodus', id: 'EXO' },
+    { name: 'Leviticus', id: 'LEV' },
+    { name: 'Numbers', id: 'NUM' },
+    { name: 'Deuteronomy', id: 'DEU' },
+    { name: 'Matthew', id: 'MAT' },
+    { name: 'Mark', id: 'MRK' },
+    { name: 'Luke', id: 'LUK' },
+    { name: 'John', id: 'JHN' },
+    { name: 'Acts', id: 'ACT' },
+    { name: 'Romans', id: 'ROM' },
+    { name: 'Psalms', id: 'PSA' },
+    { name: 'Proverbs', id: 'PRO' },
     // trim/extend this list as needed
 ];
 
@@ -14,10 +26,11 @@ export default function LogReadingForm() {
         chapter: '',
         note: '',
     });
+    const selectedBookId = BOOKS.find((book) => book.name === data.book)?.id;
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        post('/reading-entries', {
+        post(store.url(), {
             preserveScroll: true,
             onSuccess: () => reset('chapter', 'note'),
         });
@@ -47,9 +60,9 @@ export default function LogReadingForm() {
                         className="mt-1.5 w-full rounded-md border border-[#B9C7B4] bg-white px-3 py-2 text-sm text-[#16241A] shadow-sm focus:border-[#2F6B3C] focus:outline-none focus:ring-2 focus:ring-[#2F6B3C]/30"
                     >
                         <option value="">Select a book</option>
-                        {BOOKS.map((b) => (
-                            <option key={b} value={b}>
-                                {b}
+                        {BOOKS.map((book) => (
+                            <option key={book.id} value={book.name}>
+                                {book.name}
                             </option>
                         ))}
                     </select>
@@ -91,13 +104,13 @@ export default function LogReadingForm() {
                 />
             </div>
 
-            {data.book && data.chapter && (
-                <a
-                    href={`/bible/${data.book}/${data.chapter}`}
+            {selectedBookId && data.chapter && (
+                <Link
+                    href={show.url({ bookId: selectedBookId, chapter: data.chapter })}
                     className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-[#2F6B3C] hover:text-[#153D1D] hover:underline"
                 >
                     Read {data.book} {data.chapter} first →
-                </a>
+                </Link>
             )}
 
             <div className="mt-6 flex items-center gap-3 border-t border-[#EDF1EA] pt-4">

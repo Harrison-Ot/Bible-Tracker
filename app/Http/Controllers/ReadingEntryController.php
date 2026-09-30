@@ -26,7 +26,7 @@ class ReadingEntryController extends Controller
             'read_on' => $validated['read_on'] ?? today(),
         ]);
 
-        return back()->with('success', 'Reading logged.');
+        return to_route('dashboard')->with('success', 'Reading logged.');
     }
 
     public function destroy(ReadingEntry $readingEntry): RedirectResponse

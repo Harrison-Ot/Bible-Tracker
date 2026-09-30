@@ -1,5 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
+import { store } from '@/actions/App/Http/Controllers/ReadingEntryController';
 
 interface Verse {
     book_id: string;
@@ -119,7 +120,7 @@ export default function Read({ bookId, chapter, translation, passage }: ReadProp
 
     // ---- Mark as read ----
     const markAsRead = () => {
-        post('/reading-entries', {
+        post(store.url(), {
             preserveScroll: true,
             onSuccess: () => {
                 // Refreshes shared Inertia props (e.g. streak/progress used on
