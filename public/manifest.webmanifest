@@ -1,0 +1,25 @@
+{
+    "id": "/",
+    "name": "Bible Tracker",
+    "short_name": "Bible Tracker",
+    "description": "Track your Bible reading, plans, and daily verses.",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "background_color": "#f8faf8",
+    "theme_color": "#315c45",
+    "icons": [
+        {
+            "src": "/pwa-icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "/pwa-icon-maskable.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "maskable"
+        }
+    ]
+}
