@@ -33,6 +33,11 @@
         <link rel="icon" href="/favicon.ico" sizes="any">
         <link rel="icon" href="/favicon.svg" type="image/svg+xml">
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+        <link rel="manifest" href="/manifest.webmanifest">
+        <meta name="theme-color" content="#315c45">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-title" content="Bible Tracker">
 
         @fonts
 
@@ -44,5 +49,14 @@
     </head>
     <body class="font-sans antialiased">
         <x-inertia::app />
+        <script>
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/sw.js').catch((error) => {
+                        console.error('Bible Tracker service worker registration failed:', error);
+                    });
+                });
+            }
+        </script>
     </body>
 </html>
