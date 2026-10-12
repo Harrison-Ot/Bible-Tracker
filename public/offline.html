@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#315c45">
+        <title>You're offline · Bible Tracker</title>
+        <style>
+            :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+            body { min-height: 100vh; margin: 0; display: grid; place-items: center; background: #f8faf8; color: #183326; }
+            main { max-width: 28rem; padding: 2rem; text-align: center; }
+            img { width: 5rem; height: 5rem; }
+            h1 { margin-bottom: .5rem; }
+            p { line-height: 1.6; color: #4b6355; }
+            button { margin-top: 1rem; padding: .75rem 1rem; border: 0; border-radius: .6rem; background: #315c45; color: white; font: inherit; font-weight: 600; cursor: pointer; }
+            @media (prefers-color-scheme: dark) { body { background: #101713; color: #edf5ef; } p { color: #b6c8bb; } }
+        </style>
+    </head>
+    <body>
+        <main>
+            <img src="/pwa-icon.svg" alt="">
+            <h1>You're offline</h1>
+            <p>Bible Tracker needs an internet connection to load your account and reading plans. Reconnect, then try again.</p>
+            <button onclick="location.reload()">Try again</button>
+        </main>
+    </body>
+</html>
