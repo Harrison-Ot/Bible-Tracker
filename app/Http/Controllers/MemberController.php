@@ -22,7 +22,6 @@ class MemberController extends Controller
 
         $members = User::query()
             ->where('id', '!=', $user->getKey())
-            ->whereNotNull('email_verified_at')
             ->orderBy('name')
             ->paginate(18)
             ->through(function (User $member) use ($user, $connections): array {
