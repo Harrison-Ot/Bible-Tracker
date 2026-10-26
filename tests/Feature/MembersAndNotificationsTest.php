@@ -9,7 +9,7 @@ test('guests are redirected away from members and notifications', function () {
     $this->get(route('notifications.index'))->assertRedirect(route('login'));
 });
 
-test('members can browse verified users without seeing themselves or unverified users', function () {
+test('members can browse all registered users without seeing themselves or private account data', function () {
     $member = User::factory()->create(['name' => 'Community Member']);
     $other = User::factory()->create(['name' => 'Another Reader']);
     $unverified = User::factory()->unverified()->create(['name' => 'Unverified Reader']);
@@ -18,14 +18,13 @@ test('members can browse verified users without seeing themselves or unverified 
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('members/index')
-            ->has('members.data', 1)
+            ->has('members.data', 2)
             ->where('members.data.0.id', $other->id)
             ->where('members.data.0.connectionStatus', 'none')
-            ->missing('members.data.1')
+            ->where('members.data.1.id', $unverified->id)
             ->missing('members.data.0.email')
+            ->missing('members.data.1.email')
         );
-
-    expect($unverified->email_verified_at)->toBeNull();
 });
 
 test('member can send a connection request and recipient receives an in-app notification', function () {
