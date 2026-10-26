@@ -1,11 +1,12 @@
 import { Link } from '@inertiajs/react';
-import { Bell, FolderGit2, LayoutGrid, NotebookText, UsersRound } from 'lucide-react';
+import { Bell, BookOpenCheck, FolderGit2, LayoutGrid, NotebookText, UsersRound } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { index as membersIndex } from '@/actions/App/Http/Controllers/MemberController';
 import { index as notificationsIndex } from '@/actions/App/Http/Controllers/NotificationController';
+import { index as readingPlansIndex } from '@/actions/App/Http/Controllers/ReadingPlanController';
 import {
     Sidebar,
     SidebarContent,
@@ -29,6 +30,11 @@ const mainNavItems: NavItem[] = [
         title: 'Bible',
         href: '/bible',
         icon: NotebookText,
+    },
+    {
+        title: 'Reading Plans',
+        href: readingPlansIndex(),
+        icon: BookOpenCheck,
     },
     {
         title: 'Members',
