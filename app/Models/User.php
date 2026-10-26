@@ -60,4 +60,14 @@ class User extends Authenticatable
         return $this->belongsToMany(Badge::class, 'user_badges')
             ->withPivot('earned_at');
     }
+
+    public function sentConnectionRequests(): HasMany
+    {
+        return $this->hasMany(ConnectionRequest::class, 'sender_id');
+    }
+
+    public function receivedConnectionRequests(): HasMany
+    {
+        return $this->hasMany(ConnectionRequest::class, 'recipient_id');
+    }
 }
