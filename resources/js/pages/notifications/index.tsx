@@ -55,7 +55,7 @@ export default function NotificationsIndex({ notifications, unreadCount }: { not
                                             <Check /> Mark read
                                         </Button>
                                     )}
-                                    {notification.data.kind === 'connection_request' && notification.data.connection_request_id && (
+                                    {notification.data.kind === 'connection_request' && !notification.read_at && notification.data.connection_request_id && (
                                         <div className="flex gap-2">
                                             <Button size="sm" onClick={() => router.patch(updateConnection(notification.data.connection_request_id!).url, { status: 'accepted' })}>Accept</Button>
                                             <Button size="sm" variant="outline" onClick={() => router.patch(updateConnection(notification.data.connection_request_id!).url, { status: 'declined' })}>Decline</Button>
