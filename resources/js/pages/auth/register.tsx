@@ -21,7 +21,7 @@ export default function Register({ passwordRules }: Props) {
                 {...store.form()}
                 resetOnSuccess={['password', 'password_confirmation']}
                 disableWhileProcessing
-                className="flex bg-white border-[#306B3C] border-2 flex-col gap-6 text-[#1b1b18] border-[#1a4c4b] dark:bg-white md:p-10 md:rounded-md"
+                className="flex flex-col gap-6"
             >
                 {({ processing, errors }) => (
                     <>
@@ -37,6 +37,7 @@ export default function Register({ passwordRules }: Props) {
                                     autoComplete="name"
                                     name="name"
                                     placeholder="Full name"
+                                    className="h-11 bg-background"
                                 />
                                 <InputError
                                     message={errors.name}
@@ -54,6 +55,7 @@ export default function Register({ passwordRules }: Props) {
                                     autoComplete="email"
                                     name="email"
                                     placeholder="email@example.com"
+                                    className="h-11 bg-background"
                                 />
                                 <InputError message={errors.email} />
                             </div>
@@ -68,6 +70,7 @@ export default function Register({ passwordRules }: Props) {
                                     name="password"
                                     placeholder="Password"
                                     passwordrules={passwordRules}
+                                    className="h-11 bg-background"
                                 />
                                 <InputError message={errors.password} />
                             </div>
@@ -84,6 +87,7 @@ export default function Register({ passwordRules }: Props) {
                                     name="password_confirmation"
                                     placeholder="Confirm password"
                                     passwordrules={passwordRules}
+                                    className="h-11 bg-background"
                                 />
                                 <InputError
                                     message={errors.password_confirmation}
@@ -92,7 +96,7 @@ export default function Register({ passwordRules }: Props) {
 
                             <Button
                                 type="submit"
-                                className="mt-2 bg-[#306B3C] w-full"
+                                className="mt-2 h-11 w-full bg-[#306B3C] text-white hover:bg-[#285a32]"
                                 tabIndex={5}
                                 data-test="register-user-button"
                             >
@@ -101,7 +105,7 @@ export default function Register({ passwordRules }: Props) {
                             </Button>
                         </div>
 
-                        <div className="text-muted-foreground text-center text-sm">
+                        <div className="text-center text-sm text-muted-foreground">
                             Already have an account?{' '}
                             <TextLink href={login()} tabIndex={6}>
                                 Log in
