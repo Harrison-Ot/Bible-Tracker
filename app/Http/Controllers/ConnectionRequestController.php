@@ -62,7 +62,10 @@ class ConnectionRequestController extends Controller
             'status' => ['required', Rule::in(['accepted', 'declined'])],
         ]);
 
-        abort_unless($connectionRequest->status === 'pending', 422, 'This request has already been handled.');
+        if ($connectionRequest->status !== 'pending') {
+            return back();
+        }
+
         $connectionRequest->update(['status' => $validated['status']]);
 
         $request->user()->notifications()
