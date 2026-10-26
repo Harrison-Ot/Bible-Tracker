@@ -70,4 +70,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(ConnectionRequest::class, 'recipient_id');
     }
+
+    public function readingPlanProgress(): HasMany
+    {
+        return $this->hasMany(UserPlanProgress::class);
+    }
 }
