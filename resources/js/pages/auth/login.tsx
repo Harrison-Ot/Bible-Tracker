@@ -24,7 +24,7 @@ export default function Login({ status, canResetPassword }: Props) {
             <Form
                 {...store.form()}
                 resetOnSuccess={['password']}
-                className="flex flex-col gap-6 bg-white md:rounded-md p-6 text-[#1b1b18] border-[#306B3C] border-1 dark:bg-white"
+                className="flex flex-col gap-6"
             >
                 {({ processing, errors }) => (
                     <>
@@ -40,7 +40,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                     tabIndex={1}
                                     autoComplete="email"
                                     placeholder="email@example.com"
-                                    className="bg-white"
+                                    className="h-11 bg-background"
                                 />
                                 <InputError message={errors.email} />
                             </div>
@@ -51,7 +51,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                     {canResetPassword && (
                                         <TextLink
                                             href={request()}
-                                            className="ml-auto  text-blue-500 hover:text-blue-600 text-sm"
+                                            className="ml-auto text-sm font-medium text-primary underline-offset-4 hover:underline"
                                             tabIndex={5}
                                         >
                                             Forgot your password?
@@ -65,12 +65,12 @@ export default function Login({ status, canResetPassword }: Props) {
                                     tabIndex={2}
                                     autoComplete="current-password"
                                     placeholder="Password"
-                                    className="bg-white"
+                                    className="h-11 bg-background"
                                 />
                                 <InputError message={errors.password} />
                             </div>
 
-                            <div className="flex items-center space-x-3">
+                            <div className="flex items-center gap-3">
                                 <Checkbox
                                     id="remember"
                                     name="remember"
@@ -81,7 +81,7 @@ export default function Login({ status, canResetPassword }: Props) {
 
                             <Button
                                 type="submit"
-                                className="mt-4 bg-[#306B3C] w-full"
+                                className="mt-2 h-11 w-full bg-[#306B3C] text-white hover:bg-[#285a32]"
                                 tabIndex={4}
                                 disabled={processing}
                                 data-test="login-button"
@@ -91,7 +91,7 @@ export default function Login({ status, canResetPassword }: Props) {
                             </Button>
                         </div>
 
-                        <div className="text-muted-foreground text-center text-sm">
+                        <div className="text-center text-sm text-muted-foreground">
                             Don't have an account?{' '}
                             <TextLink href={register()} tabIndex={5}>
                                 Sign up
