@@ -8,12 +8,16 @@ use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\ConnectionRequestController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ReadingPlanController;
 
 
 Route::inertia('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/reading-plans', [ReadingPlanController::class, 'index'])->name('reading-plans.index');
+    Route::post('/reading-plans/{readingPlan}/start', [ReadingPlanController::class, 'store'])->name('reading-plans.store');
+    Route::post('/reading-plans/{readingPlan}/complete-day', [ReadingPlanController::class, 'completeDay'])->name('reading-plans.complete-day');
     Route::get('/members', [MemberController::class, 'index'])->name('members.index');
     Route::post('/members/{user}/connections', [ConnectionRequestController::class, 'store'])->name('connections.store');
     Route::patch('/connections/{connectionRequest}', [ConnectionRequestController::class, 'update'])->name('connections.update');
