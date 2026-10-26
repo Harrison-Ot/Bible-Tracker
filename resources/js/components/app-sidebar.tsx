@@ -1,9 +1,11 @@
 import { Link } from '@inertiajs/react';
-import { FolderGit2, LayoutGrid, NotebookText } from 'lucide-react';
+import { Bell, FolderGit2, LayoutGrid, NotebookText, UsersRound } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
+import { index as membersIndex } from '@/actions/App/Http/Controllers/MemberController';
+import { index as notificationsIndex } from '@/actions/App/Http/Controllers/NotificationController';
 import {
     Sidebar,
     SidebarContent,
@@ -15,6 +17,7 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
+import { usePage } from '@inertiajs/react';
 
 const mainNavItems: NavItem[] = [
     {
@@ -26,6 +29,16 @@ const mainNavItems: NavItem[] = [
         title: 'Bible',
         href: '/bible',
         icon: NotebookText,
+    },
+    {
+        title: 'Members',
+        href: membersIndex(),
+        icon: UsersRound,
+    },
+    {
+        title: 'Notifications',
+        href: notificationsIndex(),
+        icon: Bell,
     },
 ];
 
@@ -43,6 +56,11 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
+    const unreadNotificationCount = usePage<{ unreadNotificationCount: number }>().props.unreadNotificationCount;
+    const navItems = mainNavItems.map((item) =>
+        item.title === 'Notifications' ? { ...item, badge: unreadNotificationCount } : item,
+    );
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
@@ -58,7 +76,7 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                <NavMain items={navItems} />
             </SidebarContent>
 
             <SidebarFooter>
