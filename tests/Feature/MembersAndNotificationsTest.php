@@ -67,6 +67,22 @@ test('members can accept a request and requester is notified', function () {
     Notification::assertSentTo($sender, \App\Notifications\ConnectionRequestNotification::class);
 });
 
+test('responding again to an already handled request redirects without a 422', function () {
+    $sender = User::factory()->create();
+    $recipient = User::factory()->create();
+    $connectionRequest = ConnectionRequest::query()->create([
+        'sender_id' => $sender->id,
+        'recipient_id' => $recipient->id,
+        'status' => 'accepted',
+    ]);
+
+    $this->actingAs($recipient)
+        ->patch(route('connections.update', $connectionRequest), ['status' => 'accepted'])
+        ->assertRedirect();
+
+    expect($connectionRequest->fresh()->status)->toBe('accepted');
+});
+
 test('members cannot respond to another users connection request', function () {
     $sender = User::factory()->create();
     $recipient = User::factory()->create();
