@@ -34,6 +34,14 @@ class BibleController extends Controller
     {
         $translation = $request->query('translation', 'web');
 
+        if (! preg_match('/^(?:[1-3])?[A-Z]{2,3}$/', $bookId)) {
+            $book = collect($bible->getBooks($translation))
+                ->first(fn (array $candidate): bool => strcasecmp($candidate['name'], $bookId) === 0);
+
+            abort_unless($book, 404);
+            $bookId = $book['id'];
+        }
+
         return Inertia::render('read', [
             'bookId' => $bookId,
             'chapter' => $chapter,
