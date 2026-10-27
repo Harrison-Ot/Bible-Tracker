@@ -70,7 +70,9 @@ test('user can start a plan and see its first daily reading', function () {
     $this->get(route('reading-plans.index'))
         ->assertInertia(fn ($page) => $page
             ->where('plans.1.currentDay', 1)
-            ->has('plans.1.todayReadings', 1)
+            ->has('plans.1.todayReadings')
+            ->where('plans.1.todayReadings.0.reference', 'Matthew 1')
+            ->where('plans.1.todayReadings.0.isRead', false)
         );
 });
 
@@ -90,7 +92,7 @@ test('restarting the same plan does not reset existing progress', function () {
         ->and($progress->fresh()->started_on->toDateString())->toBe(today()->subDays(4)->toDateString());
 });
 
-test('user can advance their own plan one day at a time and cannot alter another users progress', function () {
+test('user must read every assigned chapter before advancing their own plan', function () {
     $user = User::factory()->create();
     $other = User::factory()->create();
     $plan = ReadingPlan::query()->where('slug', 'wisdom-literature')->firstOrFail();
@@ -106,6 +108,29 @@ test('user can advance their own plan one day at a time and cannot alter another
         'current_day' => 3,
         'started_on' => today()->subDays(2),
     ]);
+
+    $this->actingAs($user)->post(route('reading-plans.complete-day', $plan))
+        ->assertRedirect(route('reading-plans.index'))
+        ->assertSessionHasErrors('readingPlan');
+
+    expect($progress->fresh()->current_day)->toBe(1)
+        ->and($otherProgress->fresh()->current_day)->toBe(3);
+
+    $requiredReadings = $plan->days()->where('day_number', 1)->get(['book', 'chapters']);
+    foreach ($requiredReadings as $reading) {
+        preg_match_all('/\d+/', $reading->chapters, $matches);
+        $start = (int) $matches[0][0];
+        $end = (int) ($matches[0][1] ?? $start);
+
+        foreach (range($start, $end) as $chapter) {
+            $user->readingEntries()->create([
+                'read_on' => today(),
+                'book' => $reading->book,
+                'chapter' => $chapter,
+                'translation' => 'web',
+            ]);
+        }
+    }
 
     $this->actingAs($user)->post(route('reading-plans.complete-day', $plan))->assertRedirect(route('reading-plans.index'));
 
