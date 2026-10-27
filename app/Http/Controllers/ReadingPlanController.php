@@ -22,8 +22,46 @@ class ReadingPlanController extends Controller
             ->keyBy('reading_plan_id');
 
         $plans = $plans
-            ->map(function (ReadingPlan $plan) use ($progressByPlan): array {
+            ->map(function (ReadingPlan $plan) use ($progressByPlan, $request): array {
                 $progress = $progressByPlan->get($plan->id);
+                $todayReadings = [];
+
+                if ($progress && $progress->current_day <= $plan->duration_days) {
+                    $todayReadings = $plan->days()
+                        ->where('day_number', $progress->current_day)
+                        ->get(['book', 'chapters'])
+                        ->flatMap(function ($reading): array {
+                            preg_match_all('/\d+/', $reading->chapters, $matches);
+                            $start = (int) ($matches[0][0] ?? 0);
+                            $end = (int) ($matches[0][1] ?? $start);
+
+                            return collect(range($start, $end))
+                                ->map(fn (int $chapter): array => [
+                                    'book' => $reading->book,
+                                    'chapter' => $chapter,
+                                    'reference' => $reading->book.' '.$chapter,
+                                    'url' => route('bible.show', [
+                                        'bookId' => $reading->book,
+                                        'chapter' => $chapter,
+                                    ]),
+                                ])
+                                ->all();
+                        })
+                        ->unique(fn (array $reading): string => $reading['book'].'-'.$reading['chapter'])
+                        ->values()
+                        ->all();
+
+                    $readChapters = $request->user()->readingEntries()
+                        ->whereDate('read_on', today())
+                        ->get(['book', 'chapter'])
+                        ->map(fn ($entry): string => $entry->book.'-'.$entry->chapter)
+                        ->all();
+
+                    $todayReadings = array_map(fn (array $reading): array => [
+                        ...$reading,
+                        'isRead' => in_array($reading['book'].'-'.$reading['chapter'], $readChapters, true),
+                    ], $todayReadings);
+                }
 
                 return [
                     'id' => $plan->id,
@@ -33,16 +71,8 @@ class ReadingPlanController extends Controller
                     'currentDay' => $progress?->current_day,
                     'startedOn' => $progress?->started_on?->toDateString(),
                     'isComplete' => $progress?->current_day > $plan->duration_days,
-                    'todayReadings' => $progress && $progress->current_day <= $plan->duration_days
-                        ? $plan->days()
-                            ->where('day_number', $progress->current_day)
-                            ->get(['book', 'chapters'])
-                            ->map(fn ($reading): array => [
-                                'book' => $reading->book,
-                                'chapters' => $reading->chapters,
-                            ])
-                            ->all()
-                        : [],
+                    'todayReadings' => $todayReadings,
+                    'isTodayComplete' => $todayReadings !== [] && collect($todayReadings)->every(fn (array $reading): bool => $reading['isRead']),
                 ];
             });
 
@@ -71,6 +101,40 @@ class ReadingPlanController extends Controller
             ->firstOrFail();
 
         if ($progress->current_day <= $readingPlan->duration_days) {
+            $requiredReadings = $readingPlan->days()
+                ->where('day_number', $progress->current_day)
+                ->get(['book', 'chapters'])
+                ->flatMap(function ($reading): array {
+                    preg_match_all('/\d+/', $reading->chapters, $matches);
+                    $start = (int) ($matches[0][0] ?? 0);
+                    $end = (int) ($matches[0][1] ?? $start);
+
+                    return collect(range($start, $end))
+                        ->map(fn (int $chapter): array => ['book' => $reading->book, 'chapter' => $chapter])
+                        ->all();
+                })
+                ->unique(fn (array $reading): string => $reading['book'].'-'.$reading['chapter'])
+                ->values();
+
+            $readKeys = $request->user()->readingEntries()
+                ->whereDate('read_on', today())
+                ->get(['book', 'chapter'])
+                ->map(fn ($entry): string => $entry->book.'-'.$entry->chapter)
+                ->all();
+
+            $isComplete = $requiredReadings->isNotEmpty()
+                && $requiredReadings->every(fn (array $reading): bool => in_array(
+                    $reading['book'].'-'.$reading['chapter'],
+                    $readKeys,
+                    true,
+                ));
+
+            if (! $isComplete) {
+                return to_route('reading-plans.index')->withErrors([
+                    'readingPlan' => 'Read all of today’s assigned passages before continuing.',
+                ]);
+            }
+
             $progress->increment('current_day');
         }
 
