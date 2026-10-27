@@ -1,5 +1,5 @@
-import { Head, router } from '@inertiajs/react';
-import { Check, Clock3, UserPlus, UsersRound } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { Clock3, MessageCircle, UserPlus, UsersRound } from 'lucide-react';
 import { dashboard } from '@/routes';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import {
     update as updateConnection,
 } from '@/actions/App/Http/Controllers/ConnectionRequestController';
 import { index as membersIndex } from '@/actions/App/Http/Controllers/MemberController';
+import { index as chatsIndex } from '@/actions/App/Http/Controllers/ChatController';
 
 type Member = {
     id: number;
@@ -37,7 +38,7 @@ export default function MembersIndex({ members }: { members: PaginatedMembers })
                     <div className="space-y-2">
                         <p className="text-sm font-medium tracking-wide text-primary">COMMUNITY</p>
                         <h1 className="text-3xl font-semibold tracking-tight">Meet your members</h1>
-                        <p className="max-w-2xl text-muted-foreground">Find people growing in their Bible reading journey and connect with them. Chat will be available here in a future update.</p>
+                        <p className="max-w-2xl text-muted-foreground">Find people growing in their Bible reading journey, connect, and start a conversation.</p>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <UsersRound className="size-4" />
@@ -71,8 +72,10 @@ export default function MembersIndex({ members }: { members: PaginatedMembers })
                                         </Button>
                                     )}
                                     {member.connectionStatus === 'connected' && (
-                                        <Button className="w-full" variant="secondary" disabled>
-                                            <Check /> Connected
+                                        <Button className="w-full" variant="secondary" asChild>
+                                            <Link href={chatsIndex.url({ query: { with: member.id } })}>
+                                                <MessageCircle /> Chat
+                                            </Link>
                                         </Button>
                                     )}
                                     {member.connectionStatus === 'incoming' && member.incomingRequestId && (
