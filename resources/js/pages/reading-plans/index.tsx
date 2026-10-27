@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { BookOpen, BookOpenCheck, CalendarDays, Check, Clock3, Sparkles } from 'lucide-react';
 import { store as startReadingPlan } from '@/actions/App/Http/Controllers/ReadingPlanController';
 import { index as readingPlansIndex } from '@/actions/App/Http/Controllers/ReadingPlanController';
@@ -16,7 +16,8 @@ type Plan = {
     currentDay: number | null;
     startedOn: string | null;
     isComplete: boolean;
-    todayReadings: { book: string; chapters: string }[];
+    todayReadings: { book: string; chapter: number; reference: string; url: string; isRead: boolean }[];
+    isTodayComplete: boolean;
 };
 
 const planDetails: Record<string, { content: string; idealFor: string; description: string; accent: string }> = {
@@ -46,7 +47,7 @@ const planDetails: Record<string, { content: string; idealFor: string; descripti
     },
 };
 
-export default function ReadingPlansIndex({ plans }: { plans: Plan[] }) {
+export default function ReadingPlansIndex({ plans, errors }: { plans: Plan[]; errors?: { readingPlan?: string } }) {
     const [processingPlanId, setProcessingPlanId] = useState<number | null>(null);
 
     const submitPlanAction = (plan: Plan) => {
@@ -77,6 +78,12 @@ export default function ReadingPlansIndex({ plans }: { plans: Plan[] }) {
                         </div>
                     </div>
                 </header>
+
+                {errors?.readingPlan && (
+                    <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+                        {errors.readingPlan}
+                    </p>
+                )}
 
                 {plans.length ? (
                     <section className="grid gap-5 md:grid-cols-2">
@@ -123,10 +130,14 @@ export default function ReadingPlansIndex({ plans }: { plans: Plan[] }) {
                                         {plan.currentDay && !plan.isComplete && (
                                             <div className="rounded-lg border border-primary/15 bg-primary/[0.04] p-4">
                                                 <p className="mb-2 text-sm font-semibold">Today’s reading</p>
-                                                <ul className="space-y-1 text-sm text-muted-foreground">
+                                                <ul className="space-y-2 text-sm">
                                                     {plan.todayReadings.map((reading) => (
-                                                        <li key={`${reading.book}-${reading.chapters}`}>
-                                                            {reading.book} {reading.chapters}
+                                                        <li key={`${reading.book}-${reading.chapter}`}>
+                                                            <Link href={reading.url} className="inline-flex items-center gap-2 font-medium text-primary underline-offset-4 hover:underline">
+                                                                {reading.isRead ? <Check className="size-4" /> : <BookOpen className="size-4" />}
+                                                                {reading.reference}
+                                                            </Link>
+                                                            <span className="ml-2 text-muted-foreground">{reading.isRead ? 'Read today' : 'Open passage'}</span>
                                                         </li>
                                                     ))}
                                                 </ul>
@@ -152,7 +163,7 @@ export default function ReadingPlansIndex({ plans }: { plans: Plan[] }) {
                                     <CardFooter>
                                         <Button
                                             className="w-full"
-                                            disabled={processingPlanId === plan.id || plan.isComplete}
+                                            disabled={processingPlanId === plan.id || plan.isComplete || (!!plan.currentDay && !plan.isTodayComplete)}
                                             variant={plan.currentDay ? 'secondary' : 'default'}
                                             onClick={() => submitPlanAction(plan)}
                                         >
@@ -162,7 +173,7 @@ export default function ReadingPlansIndex({ plans }: { plans: Plan[] }) {
                                                 : plan.isComplete
                                                   ? 'Plan completed'
                                                   : plan.currentDay
-                                                    ? 'Complete today & continue'
+                                                                                                        ? plan.isTodayComplete ? 'Complete today & continue' : 'Read today’s passages first'
                                                     : 'Start this plan'}
                                         </Button>
                                     </CardFooter>
