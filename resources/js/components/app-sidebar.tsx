@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { Bell, BookOpenCheck, FolderGit2, LayoutGrid, NotebookText, UsersRound } from 'lucide-react';
+import { Bell, BookOpenCheck, FolderGit2, LayoutGrid, MessageCircle, NotebookText, UsersRound } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -7,6 +7,7 @@ import { NavUser } from '@/components/nav-user';
 import { index as membersIndex } from '@/actions/App/Http/Controllers/MemberController';
 import { index as notificationsIndex } from '@/actions/App/Http/Controllers/NotificationController';
 import { index as readingPlansIndex } from '@/actions/App/Http/Controllers/ReadingPlanController';
+import { index as chatsIndex } from '@/actions/App/Http/Controllers/ChatController';
 import {
     Sidebar,
     SidebarContent,
@@ -40,6 +41,11 @@ const mainNavItems: NavItem[] = [
         title: 'Members',
         href: membersIndex(),
         icon: UsersRound,
+    },
+    {
+        title: 'Chats',
+        href: chatsIndex(),
+        icon: MessageCircle,
     },
     {
         title: 'Notifications',
