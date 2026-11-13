@@ -13,17 +13,24 @@ interface Verse {
 interface ReadProps {
     bookId: string;
     chapter: number;
+    chapterCount: number;
     translation: string;
     passage: {
         verses: Verse[];
     };
 }
 
-export default function Read({ bookId, chapter, translation, passage }: ReadProps) {
+export default function Read({
+    bookId,
+    chapter,
+    chapterCount,
+    translation,
+    passage,
+}: ReadProps) {
     const bookName = passage.verses[0]?.book_name ?? bookId;
     const storageKey = `highlights:${bookId}:${chapter}`;
 
-    const { post, processing, recentlySuccessful } = useForm({
+    const { post, transform, processing, recentlySuccessful } = useForm({
         book: bookName,
         chapter,
         translation,
@@ -44,7 +51,8 @@ export default function Read({ bookId, chapter, translation, passage }: ReadProp
     const toggleHighlight = (verse: number) => {
         setHighlighted((prev) => {
             const next = new Set(prev);
-            next.has(verse) ? next.delete(verse) : next.add(verse);
+            if (next.has(verse)) next.delete(verse);
+            else next.add(verse);
             try {
                 localStorage.setItem(storageKey, JSON.stringify([...next]));
             } catch {
@@ -58,11 +66,12 @@ export default function Read({ bookId, chapter, translation, passage }: ReadProp
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
     const [activeVerse, setActiveVerse] = useState<number | null>(null);
-    const speechSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+    const speechSupported =
+        typeof window !== 'undefined' && 'speechSynthesis' in window;
 
     const fullText = useMemo(
         () => passage.verses.map((v) => v.text).join(' '),
-        [passage.verses]
+        [passage.verses],
     );
 
     const startSpeech = () => {
@@ -80,7 +89,9 @@ export default function Read({ bookId, chapter, translation, passage }: ReadProp
         utterance.rate = 0.95;
 
         utterance.onboundary = (e) => {
-            const hit = boundaries.find((b) => e.charIndex >= b.start && e.charIndex < b.end);
+            const hit = boundaries.find(
+                (b) => e.charIndex >= b.start && e.charIndex < b.end,
+            );
             if (hit) setActiveVerse(hit.verse);
         };
         utterance.onend = () => {
@@ -120,19 +131,12 @@ export default function Read({ bookId, chapter, translation, passage }: ReadProp
 
     // ---- Mark as read ----
     const markAsRead = () => {
-        post(store.url(), {
-            preserveScroll: true,
-            onSuccess: () => {
-                // Refreshes shared Inertia props (e.g. streak/progress used on
-                // the dashboard) without a full page navigation.
-                // Requires those values to be registered in
-                // HandleInertiaRequests::share() on the backend.
-            },
-        });
+        transform(() => ({ book: bookName, chapter, translation }));
+        post(store.url(), { preserveScroll: true });
     };
 
     const prevChapter = chapter > 1 ? chapter - 1 : null;
-    const nextChapter = chapter + 1;
+    const nextChapter = chapter < chapterCount ? chapter + 1 : null;
 
     return (
         <>
@@ -142,11 +146,21 @@ export default function Read({ bookId, chapter, translation, passage }: ReadProp
                     {/* Header */}
                     <div className="border-b border-[#D9E3D3] pb-5">
                         <Link
-                            href={`/bible/${bookId}`}
+                            href={`/bible/${bookId}?translation=${encodeURIComponent(translation)}`}
                             className="inline-flex items-center gap-1 text-sm font-medium text-[#2F6B3C] hover:text-[#153D1D]"
                         >
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                            <svg
+                                className="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M15 19l-7-7 7-7"
+                                />
                             </svg>
                             {bookName} chapters
                         </Link>
@@ -163,7 +177,11 @@ export default function Read({ bookId, chapter, translation, passage }: ReadProp
                                             onClick={startSpeech}
                                             className="flex items-center gap-1.5 rounded-full border border-[#D9E3D3] bg-white px-3.5 py-2 text-xs font-medium text-[#2F6B3C] shadow-sm hover:border-[#2F6B3C] hover:bg-[#2F6B3C]/5"
                                         >
-                                            <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                            <svg
+                                                className="h-3.5 w-3.5"
+                                                fill="currentColor"
+                                                viewBox="0 0 20 20"
+                                            >
                                                 <path d="M9.383 3.076a1 1 0 011.617.808v12.232a1 1 0 01-1.617.808L4.99 13.2H3a1 1 0 01-1-1V7.8a1 1 0 011-1h1.99l4.393-3.724z" />
                                                 <path d="M14.657 5.343a1 1 0 011.414 0A7.975 7.975 0 0118 10a7.975 7.975 0 01-1.93 4.657 1 1 0 11-1.414-1.414A5.975 5.975 0 0016 10a5.975 5.975 0 00-1.343-3.243 1 1 0 010-1.414z" />
                                             </svg>
@@ -173,7 +191,11 @@ export default function Read({ bookId, chapter, translation, passage }: ReadProp
                                     {isSpeaking && (
                                         <>
                                             <button
-                                                onClick={isPaused ? resumeSpeech : pauseSpeech}
+                                                onClick={
+                                                    isPaused
+                                                        ? resumeSpeech
+                                                        : pauseSpeech
+                                                }
                                                 className="flex items-center gap-1.5 rounded-full bg-[#2F6B3C] px-3.5 py-2 text-xs font-medium text-white shadow-sm hover:bg-[#153D1D]"
                                             >
                                                 {isPaused ? 'Resume' : 'Pause'}
@@ -191,7 +213,9 @@ export default function Read({ bookId, chapter, translation, passage }: ReadProp
                         </div>
 
                         <p className="mt-1 text-sm text-[#5B6B5D]">
-                            {translation.toUpperCase()} · {passage.verses.length} verses · tap a verse to highlight it
+                            {translation.toUpperCase()} ·{' '}
+                            {passage.verses.length} verses · tap a verse to
+                            highlight it
                         </p>
                     </div>
 
@@ -203,12 +227,29 @@ export default function Read({ bookId, chapter, translation, passage }: ReadProp
                             return (
                                 <p
                                     key={v.verse}
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-pressed={isHighlighted}
+                                    aria-label={`Verse ${v.verse}: ${v.text}`}
+                                    onKeyDown={(event) => {
+                                        if (
+                                            event.key === 'Enter' ||
+                                            event.key === ' '
+                                        ) {
+                                            event.preventDefault();
+                                            toggleHighlight(v.verse);
+                                        }
+                                    }}
                                     onClick={() => toggleHighlight(v.verse)}
                                     className={`cursor-pointer rounded-md px-2 py-1 transition-colors ${
-                                        isHighlighted ? 'bg-[#F5E7A8]' : 'hover:bg-[#2F6B3C]/5'
+                                        isHighlighted
+                                            ? 'bg-[#F5E7A8]'
+                                            : 'hover:bg-[#2F6B3C]/5'
                                     } ${isSpeakingNow ? 'ring-2 ring-[#2F6B3C]/40' : ''}`}
                                 >
-                                    <sup className="mr-1 text-xs font-medium text-[#8FA491]">{v.verse}</sup>
+                                    <sup className="mr-1 text-xs font-medium text-[#8FA491]">
+                                        {v.verse}
+                                    </sup>
                                     {v.text}
                                 </p>
                             );
@@ -218,12 +259,17 @@ export default function Read({ bookId, chapter, translation, passage }: ReadProp
                     {highlighted.size > 0 && (
                         <div className="flex items-center justify-between rounded-lg border border-[#F0E0A0] bg-[#FBF6E3] px-4 py-2.5 text-sm text-[#7A6A2A]">
                             <span>
-                                {highlighted.size} verse{highlighted.size > 1 ? 's' : ''} highlighted
+                                {highlighted.size} verse
+                                {highlighted.size > 1 ? 's' : ''} highlighted
                             </span>
                             <button
                                 onClick={() => {
                                     setHighlighted(new Set());
-                                    localStorage.removeItem(storageKey);
+                                    try {
+                                        localStorage.removeItem(storageKey);
+                                    } catch {
+                                        /* Storage may be unavailable. */
+                                    }
                                 }}
                                 className="font-medium underline hover:text-[#5A4E1E]"
                             >
@@ -236,7 +282,7 @@ export default function Read({ bookId, chapter, translation, passage }: ReadProp
                     <div className="flex justify-between text-sm">
                         {prevChapter ? (
                             <Link
-                                href={`/bible/${bookId}/${prevChapter}`}
+                                href={`/bible/${bookId}/${prevChapter}?translation=${encodeURIComponent(translation)}`}
                                 className="flex items-center gap-1 font-medium text-[#2F6B3C] hover:text-[#153D1D]"
                             >
                                 ← Chapter {prevChapter}
@@ -244,12 +290,14 @@ export default function Read({ bookId, chapter, translation, passage }: ReadProp
                         ) : (
                             <span />
                         )}
-                        <Link
-                            href={`/bible/${bookId}/${nextChapter}`}
-                            className="flex items-center gap-1 font-medium text-[#2F6B3C] hover:text-[#153D1D]"
-                        >
-                            Chapter {nextChapter} →
-                        </Link>
+                        {nextChapter && (
+                            <Link
+                                href={`/bible/${bookId}/${nextChapter}?translation=${encodeURIComponent(translation)}`}
+                                className="flex items-center gap-1 font-medium text-[#2F6B3C] hover:text-[#153D1D]"
+                            >
+                                Chapter {nextChapter} →
+                            </Link>
+                        )}
                     </div>
                 </div>
 
@@ -263,15 +311,27 @@ export default function Read({ bookId, chapter, translation, passage }: ReadProp
                             onClick={markAsRead}
                             disabled={processing}
                             className={`flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition disabled:opacity-50 ${
-                                recentlySuccessful ? 'bg-[#153D1D]' : 'bg-[#2F6B3C] hover:bg-[#153D1D]'
+                                recentlySuccessful
+                                    ? 'bg-[#153D1D]'
+                                    : 'bg-[#2F6B3C] hover:bg-[#153D1D]'
                             }`}
                         >
                             {processing ? (
                                 'Saving…'
                             ) : recentlySuccessful ? (
                                 <>
-                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    <svg
+                                        className="h-4 w-4"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        strokeWidth={3}
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M5 13l4 4L19 7"
+                                        />
                                     </svg>
                                     Marked as read
                                 </>
