@@ -14,6 +14,7 @@ class PlanDay extends Model
         'chapters',
     ];
 
+    /** @return BelongsTo<ReadingPlan, $this> */
     public function plan(): BelongsTo
     {
         return $this->belongsTo(ReadingPlan::class, 'reading_plan_id');
