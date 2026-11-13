@@ -21,46 +21,19 @@ class ReadingPlanController extends Controller
             ->get()
             ->keyBy('reading_plan_id');
 
+        $readChapters = $request->user()->readingEntries()
+            ->whereDate('read_on', today())
+            ->get(['book', 'chapter'])
+            ->map(fn ($entry): string => $entry->book.'-'.$entry->chapter)
+            ->all();
+
         $plans = $plans
-            ->map(function (ReadingPlan $plan) use ($progressByPlan, $request): array {
+            ->map(function (ReadingPlan $plan) use ($progressByPlan, $readChapters): array {
                 $progress = $progressByPlan->get($plan->id);
                 $todayReadings = [];
 
                 if ($progress && $progress->current_day <= $plan->duration_days) {
-                    $todayReadings = $plan->days()
-                        ->where('day_number', $progress->current_day)
-                        ->get(['book', 'chapters'])
-                        ->flatMap(function ($reading): array {
-                            preg_match_all('/\d+/', $reading->chapters, $matches);
-                            $start = (int) ($matches[0][0] ?? 0);
-                            $end = (int) ($matches[0][1] ?? $start);
-
-                            return collect(range($start, $end))
-                                ->map(fn (int $chapter): array => [
-                                    'book' => $reading->book,
-                                    'chapter' => $chapter,
-                                    'reference' => $reading->book.' '.$chapter,
-                                    'url' => route('bible.show', [
-                                        'bookId' => $reading->book,
-                                        'chapter' => $chapter,
-                                    ]),
-                                ])
-                                ->all();
-                        })
-                        ->unique(fn (array $reading): string => $reading['book'].'-'.$reading['chapter'])
-                        ->values()
-                        ->all();
-
-                    $readChapters = $request->user()->readingEntries()
-                        ->whereDate('read_on', today())
-                        ->get(['book', 'chapter'])
-                        ->map(fn ($entry): string => $entry->book.'-'.$entry->chapter)
-                        ->all();
-
-                    $todayReadings = array_map(fn (array $reading): array => [
-                        ...$reading,
-                        'isRead' => in_array($reading['book'].'-'.$reading['chapter'], $readChapters, true),
-                    ], $todayReadings);
+                    $todayReadings = $this->readingsForDay($plan, $progress->current_day, array_values($readChapters));
                 }
 
                 return [
@@ -139,5 +112,34 @@ class ReadingPlanController extends Controller
         }
 
         return to_route('reading-plans.index');
+    }
+
+    /**
+     * @param  list<string>  $readChapters
+     * @return list<array{book: string, chapter: int, reference: string, isRead: bool, url: string}>
+     */
+    private function readingsForDay(ReadingPlan $plan, int $day, array $readChapters): array
+    {
+        $readings = [];
+        foreach ($plan->days()->where('day_number', $day)->get(['book', 'chapters']) as $reading) {
+            preg_match_all('/\d+/', $reading->chapters, $matches);
+            $start = (int) ($matches[0][0] ?? 0);
+            $end = (int) ($matches[0][1] ?? $start);
+            if ($start < 1 || $end < $start) {
+                continue;
+            }
+            foreach (range($start, $end) as $chapter) {
+                $key = $reading->book.'-'.$chapter;
+                $readings[$key] = [
+                    'book' => $reading->book,
+                    'chapter' => $chapter,
+                    'reference' => $reading->book.' '.$chapter,
+                    'isRead' => in_array($key, $readChapters, true),
+                    'url' => route('bible.show', ['bookId' => $reading->book, 'chapter' => $chapter]),
+                ];
+            }
+        }
+
+        return array_values($readings);
     }
 }
