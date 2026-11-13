@@ -13,6 +13,7 @@ class ReadingPlan extends Model
         'duration_days',
     ];
 
+    /** @return HasMany<PlanDay, $this> */
     public function days(): HasMany
     {
         return $this->hasMany(PlanDay::class)->orderBy('day_number');
