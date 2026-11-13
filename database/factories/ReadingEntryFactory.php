@@ -6,6 +6,7 @@ use App\Models\ReadingEntry;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
+/** @extends Factory<ReadingEntry> */
 class ReadingEntryFactory extends Factory
 {
     protected $model = ReadingEntry::class;
