@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 
 interface ReadingHeatmapProps {
     readingCounts: Record<string, number>;
+    todayKey: string;
 }
 
 const SQUARE_TONE = [
@@ -27,9 +28,12 @@ function formatDateKey(date: Date): string {
     return `${year}-${month}-${day}`;
 }
 
-export default function ReadingHeatmap({ readingCounts }: ReadingHeatmapProps) {
+export default function ReadingHeatmap({
+    readingCounts,
+    todayKey,
+}: ReadingHeatmapProps) {
     const { weeks, monthLabels } = useMemo(() => {
-        const today = new Date();
+        const today = new Date(`${todayKey}T00:00:00`);
         today.setHours(0, 0, 0, 0);
 
         // Start on the Sunday at/before 52 weeks ago, so the grid aligns like GitHub's.
@@ -41,7 +45,10 @@ export default function ReadingHeatmap({ readingCounts }: ReadingHeatmapProps) {
         const cursor = new Date(start);
         while (cursor <= today) {
             const key = formatDateKey(cursor);
-            days.push({ date: new Date(cursor), count: readingCounts[key] ?? 0 });
+            days.push({
+                date: new Date(cursor),
+                count: readingCounts[key] ?? 0,
+            });
             cursor.setDate(cursor.getDate() + 1);
         }
 
@@ -56,7 +63,9 @@ export default function ReadingHeatmap({ readingCounts }: ReadingHeatmapProps) {
             const month = week[0].date.getMonth();
             if (month !== lastMonth) {
                 monthLabels.push({
-                    label: week[0].date.toLocaleString('default', { month: 'short' }),
+                    label: week[0].date.toLocaleString('default', {
+                        month: 'short',
+                    }),
                     weekIndex: i,
                 });
                 lastMonth = month;
@@ -64,21 +73,30 @@ export default function ReadingHeatmap({ readingCounts }: ReadingHeatmapProps) {
         });
 
         return { weeks, monthLabels };
-    }, [readingCounts]);
+    }, [readingCounts, todayKey]);
 
-    const totalReads = Object.values(readingCounts).reduce((sum, n) => sum + n, 0);
+    const totalReads = Object.values(readingCounts).reduce(
+        (sum, n) => sum + n,
+        0,
+    );
 
     return (
         <div className="w-full overflow-x-auto rounded-lg border border-[#D9E3D3] bg-white p-5">
             <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-sm font-medium text-[#16241A]">Your reading, this year</h3>
-                <span className="text-xs text-[#5B6B5D]">{totalReads} chapters logged</span>
+                <h3 className="text-sm font-medium text-[#16241A]">
+                    Your reading, this year
+                </h3>
+                <span className="text-xs text-[#5B6B5D]">
+                    {totalReads} chapters logged
+                </span>
             </div>
 
             <div className="relative inline-block">
                 <div className="mb-1 flex gap-[3px] pl-0 text-xs text-[#5B6B5D]">
                     {weeks.map((_, i) => {
-                        const label = monthLabels.find((m) => m.weekIndex === i);
+                        const label = monthLabels.find(
+                            (m) => m.weekIndex === i,
+                        );
                         return (
                             <span key={i} className="w-3.5 shrink-0">
                                 {label ? label.label : ''}
@@ -105,7 +123,10 @@ export default function ReadingHeatmap({ readingCounts }: ReadingHeatmapProps) {
             <div className="mt-4 flex items-center justify-end gap-1 text-xs text-[#5B6B5D]">
                 <span>Less</span>
                 {SQUARE_TONE.map((tone, i) => (
-                    <span key={i} className={`h-2.5 w-2.5 rounded-[2px] ${tone}`} />
+                    <span
+                        key={i}
+                        className={`h-2.5 w-2.5 rounded-[2px] ${tone}`}
+                    />
                 ))}
                 <span>More</span>
             </div>
