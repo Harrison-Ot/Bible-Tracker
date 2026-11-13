@@ -81,3 +81,23 @@ it('prevents a user from deleting someone else\'s reading entry', function () {
     $response->assertForbidden();
     $this->assertDatabaseHas('reading_entries', ['id' => $entry->id]);
 });
+
+it('rejects future reading dates', function () {
+    $this->actingAs(User::factory()->create())->post('/reading-entries', [
+        'book' => 'John', 'chapter' => 1, 'read_on' => today()->addDay()->toDateString(),
+    ])->assertSessionHasErrors('read_on');
+    $this->assertDatabaseCount('reading_entries', 0);
+});
+
+it('rejects unknown books and chapters beyond a book', function () {
+    $this->actingAs(User::factory()->create());
+    $this->post('/reading-entries', ['book' => 'Unknown', 'chapter' => 1])->assertSessionHasErrors('book');
+    $this->post('/reading-entries', ['book' => 'Jude', 'chapter' => 2])->assertSessionHasErrors('chapter');
+    $this->assertDatabaseCount('reading_entries', 0);
+});
+
+it('normalizes Bible provider ids when logging readings', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user)->post('/reading-entries', ['book' => 'REV', 'chapter' => 22])->assertSessionHasNoErrors();
+    $this->assertDatabaseHas('reading_entries', ['user_id' => $user->id, 'book' => 'Revelation', 'chapter' => 22]);
+});
