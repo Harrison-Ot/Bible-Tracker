@@ -3,30 +3,19 @@ import { FormEventHandler } from 'react';
 import { show } from '@/actions/App/Http/Controllers/BibleController';
 import { store } from '@/actions/App/Http/Controllers/ReadingEntryController';
 
-const BOOKS = [
-    { name: 'Genesis', id: 'GEN' },
-    { name: 'Exodus', id: 'EXO' },
-    { name: 'Leviticus', id: 'LEV' },
-    { name: 'Numbers', id: 'NUM' },
-    { name: 'Deuteronomy', id: 'DEU' },
-    { name: 'Matthew', id: 'MAT' },
-    { name: 'Mark', id: 'MRK' },
-    { name: 'Luke', id: 'LUK' },
-    { name: 'John', id: 'JHN' },
-    { name: 'Acts', id: 'ACT' },
-    { name: 'Romans', id: 'ROM' },
-    { name: 'Psalms', id: 'PSA' },
-    { name: 'Proverbs', id: 'PRO' },
-    // trim/extend this list as needed
-];
+export interface BibleBook {
+    id: string;
+    name: string;
+    chapters: number;
+}
 
-export default function LogReadingForm() {
+export default function LogReadingForm({ books }: { books: BibleBook[] }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         book: '',
         chapter: '',
         note: '',
     });
-    const selectedBookId = BOOKS.find((book) => book.name === data.book)?.id;
+    const selectedBookId = books.find((book) => book.name === data.book)?.id;
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -50,66 +39,97 @@ export default function LogReadingForm() {
 
             <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                    <label htmlFor="book" className="block text-sm font-medium text-[#16241A]">
+                    <label
+                        htmlFor="book"
+                        className="block text-sm font-medium text-[#16241A]"
+                    >
                         Book
                     </label>
                     <select
                         id="book"
+                        required
                         value={data.book}
                         onChange={(e) => setData('book', e.target.value)}
-                        className="mt-1.5 w-full rounded-md border border-[#B9C7B4] bg-white px-3 py-2 text-sm text-[#16241A] shadow-sm focus:border-[#2F6B3C] focus:outline-none focus:ring-2 focus:ring-[#2F6B3C]/30"
+                        className="mt-1.5 w-full rounded-md border border-[#B9C7B4] bg-white px-3 py-2 text-sm text-[#16241A] shadow-sm focus:border-[#2F6B3C] focus:ring-2 focus:ring-[#2F6B3C]/30 focus:outline-none"
                     >
                         <option value="">Select a book</option>
-                        {BOOKS.map((book) => (
+                        {books.map((book) => (
                             <option key={book.id} value={book.name}>
                                 {book.name}
                             </option>
                         ))}
                     </select>
                     {errors.book && (
-                        <p className="mt-1 text-xs font-medium text-red-600">{errors.book}</p>
+                        <p className="mt-1 text-xs font-medium text-red-600">
+                            {errors.book}
+                        </p>
                     )}
                 </div>
 
                 <div>
-                    <label htmlFor="chapter" className="block text-sm font-medium text-[#16241A]">
+                    <label
+                        htmlFor="chapter"
+                        className="block text-sm font-medium text-[#16241A]"
+                    >
                         Chapter
                     </label>
                     <input
                         id="chapter"
                         type="number"
                         min={1}
+                        max={
+                            books.find((book) => book.name === data.book)
+                                ?.chapters
+                        }
+                        required
                         placeholder="e.g. 3"
                         value={data.chapter}
                         onChange={(e) => setData('chapter', e.target.value)}
-                        className="mt-1.5 w-full rounded-md border border-[#B9C7B4] bg-white px-3 py-2 text-sm text-[#16241A] shadow-sm placeholder:text-[#9AAA96] focus:border-[#2F6B3C] focus:outline-none focus:ring-2 focus:ring-[#2F6B3C]/30"
+                        className="mt-1.5 w-full rounded-md border border-[#B9C7B4] bg-white px-3 py-2 text-sm text-[#16241A] shadow-sm placeholder:text-[#9AAA96] focus:border-[#2F6B3C] focus:ring-2 focus:ring-[#2F6B3C]/30 focus:outline-none"
                     />
                     {errors.chapter && (
-                        <p className="mt-1 text-xs font-medium text-red-600">{errors.chapter}</p>
+                        <p className="mt-1 text-xs font-medium text-red-600">
+                            {errors.chapter}
+                        </p>
                     )}
                 </div>
             </div>
 
             <div className="mt-4">
-                <label htmlFor="note" className="block text-sm font-medium text-[#16241A]">
-                    Note <span className="font-normal text-[#5B6B5D]">(optional)</span>
+                <label
+                    htmlFor="note"
+                    className="block text-sm font-medium text-[#16241A]"
+                >
+                    Note{' '}
+                    <span className="font-normal text-[#5B6B5D]">
+                        (optional)
+                    </span>
                 </label>
                 <textarea
                     id="note"
                     rows={3}
+                    maxLength={1000}
                     placeholder="What stood out to you?"
                     value={data.note}
                     onChange={(e) => setData('note', e.target.value)}
-                    className="mt-1.5 w-full rounded-md border border-[#B9C7B4] bg-white px-3 py-2 text-sm text-[#16241A] shadow-sm placeholder:text-[#9AAA96] focus:border-[#2F6B3C] focus:outline-none focus:ring-2 focus:ring-[#2F6B3C]/30"
+                    className="mt-1.5 w-full rounded-md border border-[#B9C7B4] bg-white px-3 py-2 text-sm text-[#16241A] shadow-sm placeholder:text-[#9AAA96] focus:border-[#2F6B3C] focus:ring-2 focus:ring-[#2F6B3C]/30 focus:outline-none"
                 />
+                {errors.note && (
+                    <p role="alert" className="mt-1 text-sm text-red-600">
+                        {errors.note}
+                    </p>
+                )}
             </div>
 
             {selectedBookId && data.chapter && (
                 <Link
-                    href={show.url({ bookId: selectedBookId, chapter: data.chapter })}
+                    href={show.url({
+                        bookId: selectedBookId,
+                        chapter: data.chapter,
+                    })}
                     className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-[#2F6B3C] hover:text-[#153D1D] hover:underline"
                 >
-                    Read {data.book} {data.chapter} first →
+                    Read {data.book} {data.chapter} first â†’
                 </Link>
             )}
 
@@ -119,7 +139,7 @@ export default function LogReadingForm() {
                     disabled={processing || !data.book || !data.chapter}
                     className="rounded-full bg-[#2F6B3C] px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#153D1D] disabled:cursor-not-allowed disabled:bg-[#9AAA96]"
                 >
-                    {processing ? 'Saving…' : 'Mark as read'}
+                    {processing ? 'Savingâ€¦' : 'Mark as read'}
                 </button>
             </div>
         </form>
