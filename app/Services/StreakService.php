@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 
 class StreakService
 {
@@ -71,10 +72,13 @@ class StreakService
 
     /**
      * Distinct read_on dates, newest first, as Carbon instances.
+     *
+     * @return Collection<int, Carbon>
      */
-    private function distinctReadDates(User $user)
+    private function distinctReadDates(User $user): Collection
     {
         return $user->readingEntries()
+            ->whereDate('read_on', '<=', today())
             ->select('read_on')
             ->distinct()
             ->pluck('read_on')
