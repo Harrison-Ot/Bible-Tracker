@@ -92,6 +92,7 @@ class ChatController extends Controller
             ->exists();
     }
 
+    /** @return Builder<ChatMessage> */
     private function conversation(int $firstUserId, int $secondUserId): Builder
     {
         return ChatMessage::query()->where(fn ($query) => $query
