@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\BibleCatalog;
 use App\Services\BibleService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -11,7 +12,9 @@ class BibleController extends Controller
 {
     public function index(Request $request, BibleService $bible): Response
     {
-        $translation = $request->query('translation', 'web');
+        $translation = $request->validate([
+            'translation' => ['sometimes', 'string', 'max:30', 'regex:/^[a-z0-9_-]+$/'],
+        ])['translation'] ?? 'web';
 
         return Inertia::render('bible/index', [
             'translation' => $translation,
@@ -21,7 +24,9 @@ class BibleController extends Controller
 
     public function chapters(Request $request, string $bookId, BibleService $bible): Response
     {
-        $translation = $request->query('translation', 'web');
+        $translation = $request->validate([
+            'translation' => ['sometimes', 'string', 'max:30', 'regex:/^[a-z0-9_-]+$/'],
+        ])['translation'] ?? 'web';
 
         return Inertia::render('bible/chapters', [
             'translation' => $translation,
@@ -32,7 +37,9 @@ class BibleController extends Controller
 
     public function show(Request $request, string $bookId, int $chapter, BibleService $bible): Response
     {
-        $translation = $request->query('translation', 'web');
+        $translation = $request->validate([
+            'translation' => ['sometimes', 'string', 'max:30', 'regex:/^[a-z0-9_-]+$/'],
+        ])['translation'] ?? 'web';
 
         if (! preg_match('/^(?:[1-3])?[A-Z]{2,3}$/', $bookId)) {
             $book = collect($bible->getBooks($translation))
@@ -42,7 +49,11 @@ class BibleController extends Controller
             $bookId = $book['id'];
         }
 
+        $catalogBook = BibleCatalog::find($bookId);
+        abort_if($catalogBook && ($chapter < 1 || $chapter > $catalogBook['chapters']), 404);
+
         return Inertia::render('read', [
+            'chapterCount' => $catalogBook['chapters'] ?? $chapter,
             'bookId' => $bookId,
             'chapter' => $chapter,
             'translation' => $translation,
