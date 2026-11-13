@@ -32,7 +32,7 @@ class ReadingPlanSeeder extends Seeder
     ];
 
     /**
-     * @var array<string, array{name: string, duration: int, books: list<string>}
+     * @var array<string, array{name: string, duration: int, books: list<string>}>
      */
     private const PLANS = [
         'blueprint' => [
