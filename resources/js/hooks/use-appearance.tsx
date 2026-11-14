@@ -34,11 +34,18 @@ const getStoredAppearance = (): Appearance => {
         return 'light';
     }
 
-    return (localStorage.getItem('appearance') as Appearance) || 'light';
+    try {
+        const stored = localStorage.getItem('appearance');
+        return stored === 'dark' || stored === 'light' || stored === 'system'
+            ? stored
+            : 'system';
+    } catch {
+        return 'system';
+    }
 };
 
 const isDarkMode = (appearance: Appearance): boolean => {
-    return appearance === 'dark' || (appearance === 'light' && prefersDark());
+    return appearance === 'dark' || (appearance === 'system' && prefersDark());
 };
 
 const applyTheme = (appearance: Appearance): void => {
@@ -68,16 +75,14 @@ const mediaQuery = (): MediaQueryList | null => {
     return window.matchMedia('(prefers-color-scheme: dark)');
 };
 
-const handleSystemThemeChange = (): void => applyTheme(currentAppearance);
+const handleSystemThemeChange = (): void => {
+    applyTheme(currentAppearance);
+    notify();
+};
 
 export function initializeTheme(): void {
     if (typeof window === 'undefined') {
         return;
-    }
-
-    if (!localStorage.getItem('appearance')) {
-        localStorage.setItem('appearance', 'light');
-        setCookie('appearance', 'light');
     }
 
     currentAppearance = getStoredAppearance();
@@ -94,15 +99,22 @@ export function useAppearance(): UseAppearanceReturn {
         () => 'system',
     );
 
-    const resolvedAppearance: ResolvedAppearance = isDarkMode(appearance)
-        ? 'dark'
-        : 'light';
+    const dark = useSyncExternalStore(
+        subscribe,
+        () => isDarkMode(currentAppearance),
+        () => false,
+    );
+    const resolvedAppearance: ResolvedAppearance = dark ? 'dark' : 'light';
 
     const updateAppearance = (mode: Appearance): void => {
         currentAppearance = mode;
 
         // Store in localStorage for client-side persistence...
-        localStorage.setItem('appearance', mode);
+        try {
+            localStorage.setItem('appearance', mode);
+        } catch {
+            /* Use the selected theme for this session. */
+        }
 
         // Store in cookie for SSR...
         setCookie('appearance', mode);
