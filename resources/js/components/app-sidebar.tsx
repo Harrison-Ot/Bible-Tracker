@@ -1,7 +1,14 @@
 import { Link } from '@inertiajs/react';
-import { Bell, BookOpenCheck, FolderGit2, LayoutGrid, MessageCircle, NotebookText, UsersRound } from 'lucide-react';
+import {
+    Bell,
+    BookOpenCheck,
+    LayoutGrid,
+    MessageCircle,
+    NotebookText,
+    UsersRound,
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
-import { NavFooter } from '@/components/nav-footer';
+
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { index as membersIndex } from '@/actions/App/Http/Controllers/MemberController';
@@ -33,6 +40,11 @@ const mainNavItems: NavItem[] = [
         icon: NotebookText,
     },
     {
+        title: 'Reading journal',
+        href: '/journal',
+        icon: NotebookText,
+    },
+    {
         title: 'Reading Plans',
         href: readingPlansIndex(),
         icon: BookOpenCheck,
@@ -54,23 +66,14 @@ const mainNavItems: NavItem[] = [
     },
 ];
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Reports',
-        href: '/reports',
-        icon: FolderGit2,
-    },
-    {
-        title: 'Groups',
-        href: '/groups',
-        icon: FolderGit2,
-    },
-];
-
 export function AppSidebar() {
-    const unreadNotificationCount = usePage<{ unreadNotificationCount: number }>().props.unreadNotificationCount;
+    const unreadNotificationCount = usePage<{
+        unreadNotificationCount: number;
+    }>().props.unreadNotificationCount;
     const navItems = mainNavItems.map((item) =>
-        item.title === 'Notifications' ? { ...item, badge: unreadNotificationCount } : item,
+        item.title === 'Notifications'
+            ? { ...item, badge: unreadNotificationCount }
+            : item,
     );
 
     return (
@@ -92,7 +95,6 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>
