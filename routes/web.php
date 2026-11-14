@@ -8,13 +8,17 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ReadingEntryController;
+use App\Http\Controllers\ReadingJournalController;
 use App\Http\Controllers\ReadingPlanController;
+use App\Http\Controllers\ReminderUnsubscribeController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/journal', [ReadingJournalController::class, 'index'])->name('journal.index');
+    Route::patch('/reading-entries/{readingEntry}', [ReadingEntryController::class, 'update'])->name('reading-entries.update');
     Route::get('/reading-plans', [ReadingPlanController::class, 'index'])->name('reading-plans.index');
     Route::post('/reading-plans/{readingPlan}/start', [ReadingPlanController::class, 'store'])->name('reading-plans.store');
     Route::post('/reading-plans/{readingPlan}/complete-day', [ReadingPlanController::class, 'completeDay'])->name('reading-plans.complete-day');
@@ -39,3 +43,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 require __DIR__.'/settings.php';
+
+// Signed links identify only the reminder being disabled. GET does not mutate settings.
+Route::get('/reading-reminders/{readingReminder}/unsubscribe', [ReminderUnsubscribeController::class, 'show'])
+    ->middleware('signed')->name('reminders.unsubscribe');
+Route::post('/reading-reminders/{readingReminder}/unsubscribe', [ReminderUnsubscribeController::class, 'store'])
+    ->middleware(['signed', 'throttle:10,1'])->name('reminders.unsubscribe.store');
