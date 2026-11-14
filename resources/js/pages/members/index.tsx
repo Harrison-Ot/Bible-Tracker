@@ -1,3 +1,5 @@
+import ActionFeedback from '@/components/action-feedback';
+import { useCommunityAction } from '@/hooks/use-community-action';
 import { Head, Link, router } from '@inertiajs/react';
 import { Clock3, MessageCircle, UserPlus, UsersRound } from 'lucide-react';
 import { dashboard } from '@/routes';
@@ -25,10 +27,30 @@ type PaginatedMembers = {
     total: number;
 };
 
-export default function MembersIndex({ members }: { members: PaginatedMembers }) {
-    const connect = (memberId: number) => router.post(storeConnection(memberId).url);
+export default function MembersIndex({
+    members,
+}: {
+    members: PaginatedMembers;
+}) {
+    const { pending, feedback, submit } = useCommunityAction();
+    const connect = (memberId: number) =>
+        submit(
+            String(memberId),
+            'post',
+            storeConnection(memberId).url,
+            {},
+            'Connection request sent.',
+        );
     const respond = (requestId: number, status: 'accepted' | 'declined') =>
-        router.patch(updateConnection(requestId).url, { status });
+        submit(
+            String(requestId),
+            'patch',
+            updateConnection(requestId).url,
+            { status },
+            status === 'accepted'
+                ? 'Connection accepted. You can now chat.'
+                : 'Connection request declined.',
+        );
 
     return (
         <>
@@ -36,73 +58,169 @@ export default function MembersIndex({ members }: { members: PaginatedMembers })
             <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-4 md:p-8">
                 <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div className="space-y-2">
-                        <p className="text-sm font-medium tracking-wide text-primary">COMMUNITY</p>
-                        <h1 className="text-3xl font-semibold tracking-tight">Meet your members</h1>
-                        <p className="max-w-2xl text-muted-foreground">Find people growing in their Bible reading journey, connect, and start a conversation.</p>
+                        <p className="text-primary text-sm font-medium tracking-wide">
+                            COMMUNITY
+                        </p>
+                        <h1 className="text-3xl font-semibold tracking-tight">
+                            Meet your members
+                        </h1>
+                        <p className="text-muted-foreground max-w-2xl">
+                            Find people growing in their Bible reading journey,
+                            connect, and start a conversation.
+                        </p>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="text-muted-foreground flex items-center gap-2 text-sm">
                         <UsersRound className="size-4" />
                         {members.total} members
                     </div>
                 </header>
 
+                <ActionFeedback
+                    feedback={
+                        pending
+                            ? { error: false, message: 'Saving changes...' }
+                            : feedback
+                    }
+                />
                 {members.data.length ? (
                     <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {members.data.map((member) => (
-                            <Card key={member.id} className="border-border/70 shadow-sm">
+                            <Card
+                                key={member.id}
+                                className="border-border/70 shadow-sm"
+                            >
                                 <CardContent className="flex items-center gap-4 p-5">
                                     <Avatar className="size-14">
-                                        <AvatarImage src={member.avatarUrl ?? undefined} alt={member.name} />
-                                        <AvatarFallback>{member.name.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</AvatarFallback>
+                                        <AvatarImage
+                                            src={member.avatarUrl ?? undefined}
+                                            alt={member.name}
+                                        />
+                                        <AvatarFallback>
+                                            {member.name
+                                                .split(' ')
+                                                .map((part) => part[0])
+                                                .slice(0, 2)
+                                                .join('')
+                                                .toUpperCase()}
+                                        </AvatarFallback>
                                     </Avatar>
                                     <div className="min-w-0 flex-1">
-                                        <h2 className="truncate font-semibold">{member.name}</h2>
-                                        <p className="text-sm text-muted-foreground">Bible reading community</p>
+                                        <h2 className="truncate font-semibold">
+                                            {member.name}
+                                        </h2>
+                                        <p className="text-muted-foreground text-sm break-words">
+                                            Bible reading community
+                                        </p>
                                     </div>
                                 </CardContent>
                                 <div className="flex gap-2 px-5 pb-5">
                                     {member.connectionStatus === 'none' && (
-                                        <Button className="w-full" onClick={() => connect(member.id)}>
-                                            <UserPlus /> Connect
+                                        <Button
+                                            className="w-full"
+                                            disabled={pending !== null}
+                                            aria-busy={
+                                                pending === String(member.id)
+                                            }
+                                            onClick={() => connect(member.id)}
+                                        >
+                                            <UserPlus />{' '}
+                                            {pending === String(member.id)
+                                                ? 'Sending...'
+                                                : 'Connect'}
                                         </Button>
                                     )}
                                     {member.connectionStatus === 'pending' && (
-                                        <Button className="w-full" variant="secondary" disabled>
+                                        <Button
+                                            className="w-full"
+                                            variant="secondary"
+                                            disabled
+                                        >
                                             <Clock3 /> Request sent
                                         </Button>
                                     )}
-                                    {member.connectionStatus === 'connected' && (
-                                        <Button className="w-full" variant="secondary" asChild>
-                                            <Link href={chatsIndex.url({ query: { with: member.id } })}>
+                                    {member.connectionStatus ===
+                                        'connected' && (
+                                        <Button
+                                            className="w-full"
+                                            variant="secondary"
+                                            asChild
+                                        >
+                                            <Link
+                                                href={chatsIndex.url({
+                                                    query: { with: member.id },
+                                                })}
+                                            >
                                                 <MessageCircle /> Chat
                                             </Link>
                                         </Button>
                                     )}
-                                    {member.connectionStatus === 'incoming' && member.incomingRequestId && (
-                                        <>
-                                            <Button className="flex-1" onClick={() => respond(member.incomingRequestId!, 'accepted')}>Accept</Button>
-                                            <Button className="flex-1" variant="outline" onClick={() => respond(member.incomingRequestId!, 'declined')}>Decline</Button>
-                                        </>
-                                    )}
+                                    {member.connectionStatus === 'incoming' &&
+                                        member.incomingRequestId && (
+                                            <>
+                                                <Button
+                                                    className="flex-1"
+                                                    disabled={pending !== null}
+                                                    onClick={() =>
+                                                        respond(
+                                                            member.incomingRequestId!,
+                                                            'accepted',
+                                                        )
+                                                    }
+                                                >
+                                                    Accept
+                                                </Button>
+                                                <Button
+                                                    className="flex-1"
+                                                    variant="outline"
+                                                    disabled={pending !== null}
+                                                    onClick={() =>
+                                                        respond(
+                                                            member.incomingRequestId!,
+                                                            'declined',
+                                                        )
+                                                    }
+                                                >
+                                                    Decline
+                                                </Button>
+                                            </>
+                                        )}
                                 </div>
                             </Card>
                         ))}
                     </section>
                 ) : (
                     <Card>
-                        <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-                            <UsersRound className="size-10 text-muted-foreground" />
-                            <h2 className="text-lg font-semibold">You’re the first member here</h2>
-                            <p className="text-sm text-muted-foreground">When more people join, they’ll appear here.</p>
+                        <CardContent className="flex flex-col items-center gap-3 px-5 py-12 text-center">
+                            <UsersRound className="text-muted-foreground size-10" />
+                            <h2 className="text-lg font-semibold">
+                                You’re the first member here
+                            </h2>
+                            <p className="text-muted-foreground text-sm">
+                                When more people join, they’ll appear here.
+                            </p>
                         </CardContent>
                     </Card>
                 )}
 
                 {members.links.length > 3 && (
-                    <nav className="flex flex-wrap justify-center gap-2" aria-label="Member pages">
+                    <nav
+                        className="flex flex-wrap justify-center gap-2"
+                        aria-label="Member pages"
+                    >
                         {members.links.map((link) => (
-                            <Button key={link.label} variant={link.active ? 'default' : 'outline'} size="sm" disabled={!link.url} onClick={() => link.url && router.visit(link.url)}>
-                                {link.label.replace(/<[^>]*>/g, '').replace('&laquo;', '«').replace('&raquo;', '»')}
+                            <Button
+                                key={link.label}
+                                variant={link.active ? 'default' : 'outline'}
+                                size="sm"
+                                disabled={!link.url}
+                                onClick={() =>
+                                    link.url && router.visit(link.url)
+                                }
+                            >
+                                {link.label
+                                    .replace(/<[^>]*>/g, '')
+                                    .replace('&laquo;', '«')
+                                    .replace('&raquo;', '»')}
                             </Button>
                         ))}
                     </nav>
