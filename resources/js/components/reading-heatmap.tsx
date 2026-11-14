@@ -6,11 +6,11 @@ interface ReadingHeatmapProps {
 }
 
 const SQUARE_TONE = [
-    'bg-[#E4EBDF]', // 0 reads
-    'bg-[#B7DDB0]', // 1
-    'bg-[#8FCB8A]', // 2
-    'bg-[#2F6B3C]', // 3
-    'bg-[#153D1D]', // 4+
+    'bg-muted', // 0 reads
+    'bg-emerald-200 dark:bg-emerald-900', // 1
+    'bg-emerald-400 dark:bg-emerald-700', // 2
+    'bg-emerald-600 dark:bg-emerald-500', // 3
+    'bg-emerald-800 dark:bg-emerald-300', // 4+
 ];
 
 function toneFor(count: number): string {
@@ -81,18 +81,18 @@ export default function ReadingHeatmap({
     );
 
     return (
-        <div className="w-full overflow-x-auto rounded-lg border border-[#D9E3D3] bg-white p-5">
+        <div className="border-border bg-card w-full overflow-x-auto rounded-lg border p-5">
             <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-sm font-medium text-[#16241A]">
-                    Your reading, this year
+                <h3 className="text-card-foreground text-sm font-medium">
+                    Your reading activity
                 </h3>
-                <span className="text-xs text-[#5B6B5D]">
+                <span className="text-muted-foreground text-xs">
                     {totalReads} chapters logged
                 </span>
             </div>
 
             <div className="relative inline-block">
-                <div className="mb-1 flex gap-[3px] pl-0 text-xs text-[#5B6B5D]">
+                <div className="text-muted-foreground mb-1 flex gap-[3px] pl-0 text-xs">
                     {weeks.map((_, i) => {
                         const label = monthLabels.find(
                             (m) => m.weekIndex === i,
@@ -120,7 +120,7 @@ export default function ReadingHeatmap({
                 </div>
             </div>
 
-            <div className="mt-4 flex items-center justify-end gap-1 text-xs text-[#5B6B5D]">
+            <div className="text-muted-foreground mt-4 flex items-center justify-end gap-1 text-xs">
                 <span>Less</span>
                 {SQUARE_TONE.map((tone, i) => (
                     <span
