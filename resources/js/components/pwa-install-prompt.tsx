@@ -1,24 +1,32 @@
+import { useReadingMode } from '@/hooks/use-reading-mode';
 import { useEffect, useState } from 'react';
 
 type InstallPromptEvent = Event & {
     prompt: () => Promise<void>;
-    userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+    userChoice: Promise<{
+        outcome: 'accepted' | 'dismissed';
+        platform: string;
+    }>;
 };
 
 export default function PwaInstallPrompt() {
-    const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
+    const { focused } = useReadingMode();
+    const [installPrompt, setInstallPrompt] =
+        useState<InstallPromptEvent | null>(null);
     const [isIos, setIsIos] = useState(false);
     const [isInstalled, setIsInstalled] = useState(false);
     const [dismissed, setDismissed] = useState(false);
 
     useEffect(() => {
         const userAgent = window.navigator.userAgent;
-        const ios = /iPad|iPhone|iPod/.test(userAgent) ||
+        const ios =
+            /iPad|iPhone|iPod/.test(userAgent) ||
             (userAgent.includes('Mac') && 'ontouchend' in document);
         setIsIos(ios);
         setIsInstalled(
             window.matchMedia('(display-mode: standalone)').matches ||
-                ('standalone' in window.navigator && window.navigator.standalone === true),
+                ('standalone' in window.navigator &&
+                    window.navigator.standalone === true),
         );
 
         const handleInstallAvailable = (event: Event) => {
@@ -34,12 +42,15 @@ export default function PwaInstallPrompt() {
         window.addEventListener('appinstalled', handleInstalled);
 
         return () => {
-            window.removeEventListener('beforeinstallprompt', handleInstallAvailable);
+            window.removeEventListener(
+                'beforeinstallprompt',
+                handleInstallAvailable,
+            );
             window.removeEventListener('appinstalled', handleInstalled);
         };
     }, []);
 
-    if (isInstalled || dismissed || (!installPrompt && !isIos)) {
+    if (focused || isInstalled || dismissed || (!installPrompt && !isIos)) {
         return null;
     }
 
@@ -53,11 +64,15 @@ export default function PwaInstallPrompt() {
     };
 
     return (
-        <aside className="fixed inset-x-4 bottom-4 z-50 mx-auto flex max-w-lg items-center gap-3 rounded-xl border bg-background p-4 text-foreground shadow-lg sm:inset-x-auto sm:right-6">
-            <img src="/pwa-icon.svg" alt="" className="size-12 shrink-0 rounded-xl" />
+        <aside className="bg-background text-foreground fixed inset-x-4 bottom-[calc(var(--mobile-nav-height)+1rem)] z-50 mx-auto flex max-w-lg items-center gap-3 rounded-xl border p-4 shadow-lg sm:inset-x-auto sm:right-6">
+            <img
+                src="/pwa-icon.svg"
+                alt=""
+                className="size-12 shrink-0 rounded-xl"
+            />
             <div className="min-w-0 flex-1">
                 <p className="font-semibold">Install Bible Tracker</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                     {isIos
                         ? 'Tap Share, then “Add to Home Screen” to install.'
                         : 'Add the app to your home screen for quick access.'}
@@ -67,7 +82,7 @@ export default function PwaInstallPrompt() {
                 <button
                     type="button"
                     onClick={install}
-                    className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
+                    className="bg-primary text-primary-foreground rounded-md px-3 py-2 text-sm font-medium"
                 >
                     Install
                 </button>
@@ -76,7 +91,7 @@ export default function PwaInstallPrompt() {
                 type="button"
                 onClick={() => setDismissed(true)}
                 aria-label="Dismiss install prompt"
-                className="rounded-md px-2 py-1 text-lg text-muted-foreground hover:bg-muted"
+                className="text-muted-foreground hover:bg-muted rounded-md px-2 py-1 text-lg"
             >
                 ×
             </button>
