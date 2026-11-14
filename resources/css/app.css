@@ -62,13 +62,13 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
+    --background: oklch(0.98 0.006 125);
     --foreground: oklch(0.145 0 0);
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.145 0 0);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
+    --primary: oklch(0.38 0.085 148);
     --primary-foreground: oklch(0.985 0 0);
     --secondary: oklch(0.97 0 0);
     --secondary-foreground: oklch(0.205 0 0);
@@ -80,7 +80,7 @@
     --destructive-foreground: oklch(0.577 0.245 27.325);
     --border: oklch(0.922 0 0);
     --input: oklch(0.922 0 0);
-    --ring: oklch(0.87 0 0);
+    --ring: oklch(0.55 0.1 148);
     --chart-1: oklch(0.646 0.222 41.116);
     --chart-2: oklch(0.6 0.118 184.704);
     --chart-3: oklch(0.398 0.07 227.392);
@@ -89,7 +89,7 @@
     --radius: 0.625rem;
     --sidebar: oklch(0.985 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
+    --sidebar-primary: oklch(0.38 0.085 148);
     --sidebar-primary-foreground: oklch(0.985 0 0);
     --sidebar-accent: oklch(0.97 0 0);
     --sidebar-accent-foreground: oklch(0.205 0 0);
@@ -104,7 +104,7 @@
     --card-foreground: oklch(0.985 0 0);
     --popover: oklch(0.145 0 0);
     --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.985 0 0);
+    --primary: oklch(0.78 0.1 148);
     --primary-foreground: oklch(0.205 0 0);
     --secondary: oklch(0.269 0 0);
     --secondary-foreground: oklch(0.985 0 0);
@@ -124,7 +124,7 @@
     --chart-5: oklch(0.645 0.246 16.439);
     --sidebar: oklch(0.205 0 0);
     --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.78 0.1 148);
     --sidebar-primary-foreground: oklch(0.985 0 0);
     --sidebar-accent: oklch(0.269 0 0);
     --sidebar-accent-foreground: oklch(0.985 0 0);
@@ -139,5 +139,20 @@
 
     body {
         @apply bg-background text-foreground;
+    }
+}
+
+@layer base {
+    a:focus-visible {
+        @apply outline-ring rounded-sm outline-2 outline-offset-4;
+    }
+}
+
+:root {
+    --mobile-nav-height: calc(4rem + env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 768px) {
+    :root {
+        --mobile-nav-height: 0px;
     }
 }
