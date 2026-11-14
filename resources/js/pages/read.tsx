@@ -1,6 +1,27 @@
-import { Head, Link, useForm } from '@inertiajs/react';
-import { useEffect, useMemo, useState } from 'react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import {
+    ArrowLeft,
+    ArrowRight,
+    Check,
+    Maximize2,
+    Minimize2,
+    Pause,
+    Play,
+    SlidersHorizontal,
+    Square,
+    Volume2,
+} from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { store } from '@/actions/App/Http/Controllers/ReadingEntryController';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { useReadingMode } from '@/hooks/use-reading-mode';
+import {
+    defaultReadingPreferences,
+    useReadingPreferences,
+    type ReadingPreferences,
+} from '@/hooks/use-reading-preferences';
+import type { Auth } from '@/types';
 
 interface Verse {
     book_id: string;
@@ -9,16 +30,21 @@ interface Verse {
     verse: number;
     text: string;
 }
-
 interface ReadProps {
     bookId: string;
     chapter: number;
     chapterCount: number;
     translation: string;
-    passage: {
-        verses: Verse[];
-    };
+    passage: { verses: Verse[] };
 }
+
+const readingWidths = {
+    compact: 'max-w-xl',
+    comfortable: 'max-w-3xl',
+    wide: 'max-w-5xl',
+};
+const selectClass =
+    'h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 export default function Read({
     bookId,
@@ -27,319 +53,483 @@ export default function Read({
     translation,
     passage,
 }: ReadProps) {
+    const { auth } = usePage<{ auth: Auth }>().props;
+    const { preferences, updatePreferences, saved } = useReadingPreferences(
+        auth.user.id,
+    );
+    const { focused, setFocused } = useReadingMode();
     const bookName = passage.verses[0]?.book_name ?? bookId;
     const storageKey = `highlights:${bookId}:${chapter}`;
-
-    const { post, transform, processing, recentlySuccessful } = useForm({
-        book: bookName,
-        chapter,
-        translation,
-    });
-
-    // ---- Highlighting ----
+    const { post, transform, processing, recentlySuccessful, errors } = useForm(
+        { book: bookName, chapter, translation },
+    );
     const [highlighted, setHighlighted] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         try {
-            const saved = localStorage.getItem(storageKey);
-            setHighlighted(saved ? new Set(JSON.parse(saved)) : new Set());
+            const value: unknown = JSON.parse(
+                localStorage.getItem(storageKey) ?? '[]',
+            );
+            setHighlighted(
+                new Set(
+                    Array.isArray(value)
+                        ? value.filter(
+                              (verse) =>
+                                  Number.isInteger(verse) &&
+                                  passage.verses.some(
+                                      (item) => item.verse === verse,
+                                  ),
+                          )
+                        : [],
+                ),
+            );
         } catch {
             setHighlighted(new Set());
         }
-    }, [storageKey]);
+    }, [storageKey, passage.verses]);
 
+    const saveHighlights = (next: Set<number>) => {
+        setHighlighted(next);
+        try {
+            localStorage.setItem(storageKey, JSON.stringify([...next]));
+        } catch {
+            /* Highlighting remains available for this session. */
+        }
+    };
     const toggleHighlight = (verse: number) => {
-        setHighlighted((prev) => {
-            const next = new Set(prev);
-            if (next.has(verse)) next.delete(verse);
-            else next.add(verse);
-            try {
-                localStorage.setItem(storageKey, JSON.stringify([...next]));
-            } catch {
-                // storage unavailable — highlight still works for this session
-            }
-            return next;
-        });
+        const next = new Set(highlighted);
+        if (next.has(verse)) next.delete(verse);
+        else next.add(verse);
+        saveHighlights(next);
     };
 
-    // ---- Text-to-speech ----
+    useEffect(() => () => setFocused(false), [setFocused]);
+    useEffect(() => {
+        if (!focused) return;
+        const escape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setFocused(false);
+        };
+        window.addEventListener('keydown', escape);
+        return () => window.removeEventListener('keydown', escape);
+    }, [focused, setFocused]);
+
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
     const [activeVerse, setActiveVerse] = useState<number | null>(null);
+    const [speechError, setSpeechError] = useState('');
+    const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
     const speechSupported =
         typeof window !== 'undefined' && 'speechSynthesis' in window;
-
     const fullText = useMemo(
-        () => passage.verses.map((v) => v.text).join(' '),
+        () => passage.verses.map((verse) => verse.text).join(' '),
         [passage.verses],
     );
 
+    const stopSpeech = () => {
+        if (speechSupported) window.speechSynthesis.cancel();
+        utteranceRef.current = null;
+        setIsSpeaking(false);
+        setIsPaused(false);
+        setActiveVerse(null);
+    };
     const startSpeech = () => {
-        if (!speechSupported) return;
+        if (!speechSupported || !fullText) return;
         window.speechSynthesis.cancel();
-
-        let charOffset = 0;
-        const boundaries = passage.verses.map((v) => {
-            const start = charOffset;
-            charOffset += v.text.length + 1;
-            return { verse: v.verse, start, end: charOffset };
+        setSpeechError('');
+        let offset = 0;
+        const boundaries = passage.verses.map((verse) => {
+            const start = offset;
+            offset += verse.text.length + 1;
+            return { verse: verse.verse, start, end: offset };
         });
-
         const utterance = new SpeechSynthesisUtterance(fullText);
         utterance.rate = 0.95;
-
-        utterance.onboundary = (e) => {
-            const hit = boundaries.find(
-                (b) => e.charIndex >= b.start && e.charIndex < b.end,
+        utterance.onboundary = (event) => {
+            const current = boundaries.find(
+                (boundary) =>
+                    event.charIndex >= boundary.start &&
+                    event.charIndex < boundary.end,
             );
-            if (hit) setActiveVerse(hit.verse);
+            if (current) setActiveVerse(current.verse);
         };
         utterance.onend = () => {
             setIsSpeaking(false);
             setIsPaused(false);
             setActiveVerse(null);
         };
-        utterance.onerror = () => {
+        utterance.onerror = (event) => {
             setIsSpeaking(false);
             setIsPaused(false);
             setActiveVerse(null);
+            if (!['canceled', 'interrupted'].includes(event.error))
+                setSpeechError('Audio could not start. Please try again.');
         };
-
+        utteranceRef.current = utterance;
         window.speechSynthesis.speak(utterance);
         setIsSpeaking(true);
         setIsPaused(false);
     };
-
-    const pauseSpeech = () => {
-        window.speechSynthesis.pause();
-        setIsPaused(true);
-    };
-
-    const resumeSpeech = () => {
-        window.speechSynthesis.resume();
-        setIsPaused(false);
-    };
-
-    const stopSpeech = () => {
-        window.speechSynthesis.cancel();
+    useEffect(() => {
+        window.speechSynthesis?.cancel();
         setIsSpeaking(false);
         setIsPaused(false);
         setActiveVerse(null);
-    };
+        setSpeechError('');
+        return () => window.speechSynthesis?.cancel();
+    }, [bookId, chapter, translation]);
 
-    useEffect(() => stopSpeech, [bookId, chapter]);
-
-    // ---- Mark as read ----
     const markAsRead = () => {
         transform(() => ({ book: bookName, chapter, translation }));
         post(store.url(), { preserveScroll: true });
     };
-
-    const prevChapter = chapter > 1 ? chapter - 1 : null;
-    const nextChapter = chapter < chapterCount ? chapter + 1 : null;
+    const passageUrl = (number: number) =>
+        `/bible/${bookId}/${number}?translation=${encodeURIComponent(translation)}`;
 
     return (
         <>
             <Head title={`${bookName} ${chapter}`} />
-            <div className="min-h-screen bg-[#F7FAF6] pb-28">
-                <div className="mx-auto max-w-2xl space-y-6 p-6 sm:p-10">
-                    {/* Header */}
-                    <div className="border-b border-[#D9E3D3] pb-5">
-                        <Link
-                            href={`/bible/${bookId}?translation=${encodeURIComponent(translation)}`}
-                            className="inline-flex items-center gap-1 text-sm font-medium text-[#2F6B3C] hover:text-[#153D1D]"
-                        >
-                            <svg
-                                className="h-4 w-4"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={2}
+            <div className="bg-background text-foreground flex min-h-[calc(100svh-4rem-var(--mobile-nav-height))] flex-col">
+                <div
+                    className={`mx-auto w-full flex-1 space-y-6 p-4 sm:p-8 ${readingWidths[preferences.width]}`}
+                >
+                    <header className="space-y-4 border-b pb-5">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <Link
+                                href={`/bible/${bookId}?translation=${encodeURIComponent(translation)}`}
+                                className="text-primary inline-flex items-center gap-1 text-sm font-medium hover:underline"
                             >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M15 19l-7-7 7-7"
+                                <ArrowLeft
+                                    className="size-4"
+                                    aria-hidden="true"
                                 />
-                            </svg>
-                            {bookName} chapters
-                        </Link>
-
-                        <div className="mt-3 flex items-center justify-between">
-                            <h1 className="text-3xl font-bold tracking-tight text-[#16241A]">
-                                {bookName} {chapter}
-                            </h1>
-
+                                {bookName} chapters
+                            </Link>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                aria-pressed={focused}
+                                onClick={() => setFocused(!focused)}
+                            >
+                                {focused ? (
+                                    <Minimize2 aria-hidden="true" />
+                                ) : (
+                                    <Maximize2 aria-hidden="true" />
+                                )}
+                                {focused ? 'Exit focus' : 'Focus mode'}
+                            </Button>
+                        </div>
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <p className="text-primary mb-1 text-xs font-semibold tracking-widest uppercase">
+                                    {translation.toUpperCase()}
+                                </p>
+                                <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+                                    {bookName} {chapter}
+                                </h1>
+                            </div>
                             {speechSupported && (
-                                <div className="flex items-center gap-2">
-                                    {!isSpeaking && (
-                                        <button
+                                <div className="flex flex-wrap gap-2">
+                                    {!isSpeaking ? (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
                                             onClick={startSpeech}
-                                            className="flex items-center gap-1.5 rounded-full border border-[#D9E3D3] bg-white px-3.5 py-2 text-xs font-medium text-[#2F6B3C] shadow-sm hover:border-[#2F6B3C] hover:bg-[#2F6B3C]/5"
+                                            disabled={!passage.verses.length}
                                         >
-                                            <svg
-                                                className="h-3.5 w-3.5"
-                                                fill="currentColor"
-                                                viewBox="0 0 20 20"
-                                            >
-                                                <path d="M9.383 3.076a1 1 0 011.617.808v12.232a1 1 0 01-1.617.808L4.99 13.2H3a1 1 0 01-1-1V7.8a1 1 0 011-1h1.99l4.393-3.724z" />
-                                                <path d="M14.657 5.343a1 1 0 011.414 0A7.975 7.975 0 0118 10a7.975 7.975 0 01-1.93 4.657 1 1 0 11-1.414-1.414A5.975 5.975 0 0016 10a5.975 5.975 0 00-1.343-3.243 1 1 0 010-1.414z" />
-                                            </svg>
+                                            <Volume2 aria-hidden="true" />
                                             Listen
-                                        </button>
-                                    )}
-                                    {isSpeaking && (
+                                        </Button>
+                                    ) : (
                                         <>
-                                            <button
-                                                onClick={
-                                                    isPaused
-                                                        ? resumeSpeech
-                                                        : pauseSpeech
-                                                }
-                                                className="flex items-center gap-1.5 rounded-full bg-[#2F6B3C] px-3.5 py-2 text-xs font-medium text-white shadow-sm hover:bg-[#153D1D]"
+                                            <Button
+                                                size="sm"
+                                                onClick={() => {
+                                                    if (isPaused)
+                                                        window.speechSynthesis.resume();
+                                                    else
+                                                        window.speechSynthesis.pause();
+                                                    setIsPaused(!isPaused);
+                                                }}
                                             >
+                                                {isPaused ? (
+                                                    <Play aria-hidden="true" />
+                                                ) : (
+                                                    <Pause aria-hidden="true" />
+                                                )}
                                                 {isPaused ? 'Resume' : 'Pause'}
-                                            </button>
-                                            <button
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
                                                 onClick={stopSpeech}
-                                                className="rounded-full border border-[#D9E3D3] bg-white px-3.5 py-2 text-xs font-medium text-[#5B6B5D] shadow-sm hover:border-red-300 hover:text-red-600"
                                             >
+                                                <Square aria-hidden="true" />
                                                 Stop
-                                            </button>
+                                            </Button>
                                         </>
                                     )}
                                 </div>
                             )}
                         </div>
-
-                        <p className="mt-1 text-sm text-[#5B6B5D]">
-                            {translation.toUpperCase()} ·{' '}
-                            {passage.verses.length} verses · tap a verse to
-                            highlight it
+                        <p className="text-muted-foreground text-sm">
+                            {passage.verses.length} verses · Select a verse to
+                            highlight it.
+                            {focused
+                                ? ' Press Escape to leave focus mode.'
+                                : ''}
                         </p>
-                    </div>
+                        {speechError && (
+                            <p
+                                role="alert"
+                                className="text-destructive text-sm dark:text-red-400"
+                            >
+                                {speechError}
+                            </p>
+                        )}
+                    </header>
 
-                    {/* Passage */}
-                    <div className="space-y-1 rounded-xl border border-[#D9E3D3] bg-white p-6 leading-relaxed text-[#16241A] shadow-sm sm:p-8">
-                        {passage.verses.map((v) => {
-                            const isHighlighted = highlighted.has(v.verse);
-                            const isSpeakingNow = activeVerse === v.verse;
-                            return (
+                    <details className="bg-card rounded-xl border p-4 shadow-sm">
+                        <summary className="focus-visible:ring-ring flex cursor-pointer list-none items-center gap-2 rounded-sm text-sm font-medium focus-visible:ring-2 focus-visible:outline-none">
+                            <SlidersHorizontal
+                                className="text-primary size-4"
+                                aria-hidden="true"
+                            />
+                            Reading appearance
+                            <span className="text-muted-foreground ml-auto text-xs font-normal">
+                                {preferences.fontSize}px
+                            </span>
+                        </summary>
+                        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+                            <div className="space-y-2">
+                                <Label htmlFor="reading-font-size">
+                                    Text size
+                                </Label>
+                                <select
+                                    id="reading-font-size"
+                                    className={selectClass}
+                                    value={preferences.fontSize}
+                                    onChange={(event) =>
+                                        updatePreferences({
+                                            ...preferences,
+                                            fontSize: Number(
+                                                event.target.value,
+                                            ),
+                                        })
+                                    }
+                                >
+                                    {[16, 18, 20, 22, 24, 26].map((size) => (
+                                        <option key={size} value={size}>
+                                            {size}px
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="reading-line-spacing">
+                                    Line spacing
+                                </Label>
+                                <select
+                                    id="reading-line-spacing"
+                                    className={selectClass}
+                                    value={preferences.lineSpacing}
+                                    onChange={(event) =>
+                                        updatePreferences({
+                                            ...preferences,
+                                            lineSpacing: Number(
+                                                event.target.value,
+                                            ),
+                                        })
+                                    }
+                                >
+                                    <option value={1.6}>Close</option>
+                                    <option value={1.8}>Comfortable</option>
+                                    <option value={2}>Spacious</option>
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="reading-width">
+                                    Reading width
+                                </Label>
+                                <select
+                                    id="reading-width"
+                                    className={selectClass}
+                                    value={preferences.width}
+                                    onChange={(event) =>
+                                        updatePreferences({
+                                            ...preferences,
+                                            width: event.target
+                                                .value as ReadingPreferences['width'],
+                                        })
+                                    }
+                                >
+                                    <option value="compact">Compact</option>
+                                    <option value="comfortable">
+                                        Comfortable
+                                    </option>
+                                    <option value="wide">Wide</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+                            <p
+                                role="status"
+                                className="text-muted-foreground text-xs"
+                            >
+                                {saved
+                                    ? 'Appearance is saved for your account on this device.'
+                                    : 'Appearance changed for this session. Device storage is unavailable.'}
+                            </p>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                    updatePreferences(defaultReadingPreferences)
+                                }
+                            >
+                                Reset appearance
+                            </Button>
+                        </div>
+                    </details>
+
+                    {passage.verses.length ? (
+                        <section
+                            aria-label={`${bookName} ${chapter} passage`}
+                            className="bg-card text-card-foreground space-y-1 rounded-xl border p-3 shadow-sm sm:p-6"
+                            style={{
+                                fontSize: preferences.fontSize,
+                                lineHeight: preferences.lineSpacing,
+                            }}
+                        >
+                            {passage.verses.map((verse) => (
                                 <p
-                                    key={v.verse}
+                                    key={verse.verse}
                                     role="button"
                                     tabIndex={0}
-                                    aria-pressed={isHighlighted}
-                                    aria-label={`Verse ${v.verse}: ${v.text}`}
+                                    aria-pressed={highlighted.has(verse.verse)}
+                                    aria-label={`Verse ${verse.verse}: ${verse.text}`}
+                                    onClick={() => toggleHighlight(verse.verse)}
                                     onKeyDown={(event) => {
                                         if (
                                             event.key === 'Enter' ||
                                             event.key === ' '
                                         ) {
                                             event.preventDefault();
-                                            toggleHighlight(v.verse);
+                                            toggleHighlight(verse.verse);
                                         }
                                     }}
-                                    onClick={() => toggleHighlight(v.verse)}
-                                    className={`cursor-pointer rounded-md px-2 py-1 transition-colors ${
-                                        isHighlighted
-                                            ? 'bg-[#F5E7A8]'
-                                            : 'hover:bg-[#2F6B3C]/5'
-                                    } ${isSpeakingNow ? 'ring-2 ring-[#2F6B3C]/40' : ''}`}
+                                    className={`focus-visible:ring-ring cursor-pointer rounded-md px-2 py-1 transition-colors focus-visible:ring-2 focus-visible:outline-none ${highlighted.has(verse.verse) ? 'bg-amber-100 text-amber-950 dark:bg-amber-900/50 dark:text-amber-100' : 'hover:bg-accent'} ${activeVerse === verse.verse ? 'ring-primary/50 ring-2' : ''}`}
                                 >
-                                    <sup className="mr-1 text-xs font-medium text-[#8FA491]">
-                                        {v.verse}
+                                    <sup className="text-muted-foreground mr-2 text-xs font-semibold">
+                                        {verse.verse}
                                     </sup>
-                                    {v.text}
+                                    {verse.text}
                                 </p>
-                            );
-                        })}
-                    </div>
-
-                    {highlighted.size > 0 && (
-                        <div className="flex items-center justify-between rounded-lg border border-[#F0E0A0] bg-[#FBF6E3] px-4 py-2.5 text-sm text-[#7A6A2A]">
-                            <span>
-                                {highlighted.size} verse
-                                {highlighted.size > 1 ? 's' : ''} highlighted
-                            </span>
-                            <button
-                                onClick={() => {
-                                    setHighlighted(new Set());
-                                    try {
-                                        localStorage.removeItem(storageKey);
-                                    } catch {
-                                        /* Storage may be unavailable. */
-                                    }
-                                }}
-                                className="font-medium underline hover:text-[#5A4E1E]"
-                            >
-                                Clear
-                            </button>
-                        </div>
+                            ))}
+                        </section>
+                    ) : (
+                        <section className="bg-card rounded-xl border p-8 text-center">
+                            <h2 className="font-semibold">
+                                No verses are available for this chapter.
+                            </h2>
+                            <p className="text-muted-foreground mt-2 text-sm">
+                                Return to the book list to try another chapter
+                                or translation.
+                            </p>
+                            <Button asChild variant="outline" className="mt-4">
+                                <Link
+                                    href={`/bible?translation=${encodeURIComponent(translation)}`}
+                                >
+                                    Browse the Bible
+                                </Link>
+                            </Button>
+                        </section>
                     )}
 
-                    {/* Chapter navigation */}
-                    <div className="flex justify-between text-sm">
-                        {prevChapter ? (
-                            <Link
-                                href={`/bible/${bookId}/${prevChapter}?translation=${encodeURIComponent(translation)}`}
-                                className="flex items-center gap-1 font-medium text-[#2F6B3C] hover:text-[#153D1D]"
+                    {highlighted.size > 0 && (
+                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-300/50 bg-amber-100/60 px-4 py-3 text-sm text-amber-950 dark:bg-amber-900/30 dark:text-amber-100">
+                            <span>
+                                {highlighted.size}{' '}
+                                {highlighted.size === 1 ? 'verse' : 'verses'}{' '}
+                                highlighted
+                            </span>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => saveHighlights(new Set())}
                             >
-                                ← Chapter {prevChapter}
-                            </Link>
+                                Clear highlights
+                            </Button>
+                        </div>
+                    )}
+                    <nav
+                        aria-label="Chapter navigation"
+                        className="flex flex-wrap justify-between gap-3 pb-4"
+                    >
+                        {chapter > 1 ? (
+                            <Button asChild variant="outline">
+                                <Link href={passageUrl(chapter - 1)}>
+                                    <ArrowLeft aria-hidden="true" />
+                                    Chapter {chapter - 1}
+                                </Link>
+                            </Button>
                         ) : (
                             <span />
                         )}
-                        {nextChapter && (
-                            <Link
-                                href={`/bible/${bookId}/${nextChapter}?translation=${encodeURIComponent(translation)}`}
-                                className="flex items-center gap-1 font-medium text-[#2F6B3C] hover:text-[#153D1D]"
-                            >
-                                Chapter {nextChapter} →
-                            </Link>
+                        {chapter < chapterCount ? (
+                            <Button asChild variant="outline">
+                                <Link href={passageUrl(chapter + 1)}>
+                                    Chapter {chapter + 1}
+                                    <ArrowRight aria-hidden="true" />
+                                </Link>
+                            </Button>
+                        ) : (
+                            <span className="text-muted-foreground self-center text-sm">
+                                End of {bookName}
+                            </span>
                         )}
-                    </div>
+                    </nav>
                 </div>
-
-                {/* Sticky bottom action bar */}
-                <div className="fixed inset-x-0 bottom-0 border-t border-[#D9E3D3] bg-white/90 p-4 backdrop-blur-sm">
-                    <div className="mx-auto flex max-w-2xl items-center justify-between">
-                        <p className="text-xs text-[#5B6B5D]">
-                            {bookName} {chapter} · {translation.toUpperCase()}
-                        </p>
-                        <button
+                <div
+                    className={`bg-background/95 sticky bottom-[var(--mobile-nav-height)] z-20 border-t p-4 backdrop-blur-md ${focused ? 'pb-[max(1rem,env(safe-area-inset-bottom))]' : ''}`}
+                >
+                    <div
+                        className={`mx-auto flex w-full flex-wrap items-center justify-between gap-3 ${readingWidths[preferences.width]}`}
+                    >
+                        {focused ? (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setFocused(false)}
+                            >
+                                <Minimize2 aria-hidden="true" />
+                                Exit focus
+                            </Button>
+                        ) : (
+                            <p className="text-muted-foreground text-xs">
+                                {bookName} {chapter} ·{' '}
+                                {translation.toUpperCase()}
+                            </p>
+                        )}
+                        <Button
                             onClick={markAsRead}
-                            disabled={processing}
-                            className={`flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition disabled:opacity-50 ${
-                                recentlySuccessful
-                                    ? 'bg-[#153D1D]'
-                                    : 'bg-[#2F6B3C] hover:bg-[#153D1D]'
-                            }`}
+                            disabled={processing || !passage.verses.length}
                         >
-                            {processing ? (
-                                'Saving…'
-                            ) : recentlySuccessful ? (
-                                <>
-                                    <svg
-                                        className="h-4 w-4"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                        strokeWidth={3}
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            d="M5 13l4 4L19 7"
-                                        />
-                                    </svg>
-                                    Marked as read
-                                </>
-                            ) : (
-                                'Mark as read'
-                            )}
-                        </button>
+                            {recentlySuccessful && <Check aria-hidden="true" />}
+                            {processing
+                                ? 'Saving...'
+                                : recentlySuccessful
+                                  ? 'Marked as read'
+                                  : 'Mark as read'}
+                        </Button>
                     </div>
+                    {Object.values(errors).length > 0 && (
+                        <p
+                            role="alert"
+                            className="text-destructive mx-auto mt-2 max-w-prose text-sm"
+                        >
+                            {Object.values(errors).join(' ')}
+                        </p>
+                    )}
                 </div>
             </div>
         </>
