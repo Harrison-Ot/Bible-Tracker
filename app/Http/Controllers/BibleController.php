@@ -52,12 +52,24 @@ class BibleController extends Controller
         $catalogBook = BibleCatalog::find($bookId);
         abort_if($catalogBook && ($chapter < 1 || $chapter > $catalogBook['chapters']), 404);
 
+        $passage = $bible->getChapter($translation, $bookId, $chapter);
+        // Only a successfully loaded passage becomes the account's reading position.
+        // Speculative prefetch requests must not move the reading position.
+        if ($catalogBook && ! empty($passage['verses']) && ! $request->prefetch()) {
+            $request->user()->forceFill(['last_reading' => [
+                'bookId' => $bookId,
+                'book' => $catalogBook['name'],
+                'chapter' => $chapter,
+                'translation' => $translation,
+            ]])->save();
+        }
+
         return Inertia::render('read', [
             'chapterCount' => $catalogBook['chapters'] ?? $chapter,
             'bookId' => $bookId,
             'chapter' => $chapter,
             'translation' => $translation,
-            'passage' => $bible->getChapter($translation, $bookId, $chapter),
+            'passage' => $passage,
         ]);
     }
 }
