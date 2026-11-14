@@ -44,13 +44,17 @@ export default function Profile({
                     }}
                     className="space-y-6"
                 >
-                    {({ processing, errors }) => (
+                    {({ processing, errors, recentlySuccessful }) => (
                         <>
                             <div className="grid gap-2">
                                 <Label htmlFor="name">Name</Label>
 
                                 <Input
                                     id="name"
+                                    aria-invalid={Boolean(errors.name)}
+                                    aria-describedby={
+                                        errors.name ? 'name-error' : undefined
+                                    }
                                     className="mt-1 block w-full"
                                     defaultValue={auth.user.name}
                                     name="name"
@@ -60,6 +64,7 @@ export default function Profile({
                                 />
 
                                 <InputError
+                                    id="name-error"
                                     className="mt-2"
                                     message={errors.name}
                                 />
@@ -70,6 +75,10 @@ export default function Profile({
 
                                 <Input
                                     id="email"
+                                    aria-invalid={Boolean(errors.email)}
+                                    aria-describedby={
+                                        errors.email ? 'email-error' : undefined
+                                    }
                                     type="email"
                                     className="mt-1 block w-full"
                                     defaultValue={auth.user.email}
@@ -80,6 +89,7 @@ export default function Profile({
                                 />
 
                                 <InputError
+                                    id="email-error"
                                     className="mt-2"
                                     message={errors.email}
                                 />
@@ -102,7 +112,7 @@ export default function Profile({
 
                                         {status ===
                                             'verification-link-sent' && (
-                                            <div className="mt-2 text-sm font-medium text-green-600">
+                                            <div className="mt-2 text-sm font-medium text-green-700 dark:text-green-400">
                                                 A new verification link has been
                                                 sent to your email address.
                                             </div>
@@ -110,13 +120,19 @@ export default function Profile({
                                     </div>
                                 )}
 
-                            <div className="flex items-center gap-4">
+                            <div className="flex flex-wrap items-center gap-4">
                                 <Button
                                     disabled={processing}
                                     data-test="update-profile-button"
                                 >
-                                    Save
+                                    {processing ? 'Saving...' : 'Save'}
                                 </Button>
+                                <span
+                                    role="status"
+                                    className="text-primary text-sm"
+                                >
+                                    {recentlySuccessful ? 'Profile saved.' : ''}
+                                </span>
                             </div>
                         </>
                     )}
