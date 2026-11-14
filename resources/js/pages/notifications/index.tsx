@@ -1,3 +1,5 @@
+import ActionFeedback from '@/components/action-feedback';
+import { useCommunityAction } from '@/hooks/use-community-action';
 import { Head, router } from '@inertiajs/react';
 import { Bell, Check, UserRoundPlus } from 'lucide-react';
 import { dashboard } from '@/routes';
@@ -24,62 +26,190 @@ type PaginatedNotifications = {
     links: { url: string | null; label: string; active: boolean }[];
 };
 
-export default function NotificationsIndex({ notifications, unreadCount }: { notifications: PaginatedNotifications; unreadCount: number }) {
+export default function NotificationsIndex({
+    notifications,
+    unreadCount,
+}: {
+    notifications: PaginatedNotifications;
+    unreadCount: number;
+}) {
+    const { pending, feedback, submit } = useCommunityAction();
     return (
         <>
             <Head title="Notifications" />
             <main className="mx-auto flex w-full max-w-4xl flex-col gap-8 p-4 md:p-8">
-                <header className="flex items-end justify-between gap-4">
+                <header className="flex flex-wrap items-end justify-between gap-4">
                     <div className="space-y-2">
-                        <p className="text-sm font-medium tracking-wide text-primary">YOUR COMMUNITY</p>
-                        <h1 className="text-3xl font-semibold tracking-tight">Notifications</h1>
-                        <p className="text-muted-foreground">Connection requests and updates from your members.</p>
+                        <p className="text-primary text-sm font-medium tracking-wide">
+                            YOUR COMMUNITY
+                        </p>
+                        <h1 className="text-3xl font-semibold tracking-tight">
+                            Notifications
+                        </h1>
+                        <p className="text-muted-foreground">
+                            Connection requests and updates from your members.
+                        </p>
                     </div>
-                    {unreadCount > 0 && <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">{unreadCount} unread</span>}
+                    {unreadCount > 0 && (
+                        <span className="bg-primary/10 text-primary rounded-full px-3 py-1 text-sm font-medium">
+                            {unreadCount} unread
+                        </span>
+                    )}
                 </header>
 
+                <ActionFeedback
+                    feedback={
+                        pending
+                            ? { error: false, message: 'Saving changes...' }
+                            : feedback
+                    }
+                />
                 {notifications.data.length ? (
                     <section className="flex flex-col gap-3">
                         {notifications.data.map((notification) => (
-                            <Card key={notification.id} className={notification.read_at ? 'border-border/70' : 'border-primary/30 bg-primary/[0.03]'}>
+                            <Card
+                                key={notification.id}
+                                className={
+                                    notification.read_at
+                                        ? 'border-border/70'
+                                        : 'border-primary/30 bg-primary/[0.03]'
+                                }
+                            >
                                 <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
-                                    <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                                        {notification.data.kind === 'connection_request' ? <UserRoundPlus className="size-5" /> : <Bell className="size-5" />}
+                                    <div className="bg-primary/10 text-primary flex size-11 shrink-0 items-center justify-center rounded-full">
+                                        {notification.data.kind ===
+                                        'connection_request' ? (
+                                            <UserRoundPlus className="size-5" />
+                                        ) : (
+                                            <Bell className="size-5" />
+                                        )}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <p className="font-medium">{notification.data.message ?? 'You have a new notification.'}</p>
-                                        <p className="mt-1 text-sm text-muted-foreground">{new Date(notification.created_at).toLocaleString()}</p>
+                                        <p className="font-medium break-words">
+                                            {notification.data.message ??
+                                                'You have a new notification.'}
+                                        </p>
+                                        <p className="text-muted-foreground mt-1 text-sm">
+                                            {new Date(
+                                                notification.created_at,
+                                            ).toLocaleString()}
+                                        </p>
                                     </div>
                                     {!notification.read_at && (
-                                        <Button variant="ghost" size="sm" onClick={() => router.patch(markNotificationRead(notification.id).url)}>
-                                            <Check /> Mark read
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            disabled={pending !== null}
+                                            aria-busy={
+                                                pending === notification.id
+                                            }
+                                            onClick={() =>
+                                                submit(
+                                                    notification.id,
+                                                    'patch',
+                                                    markNotificationRead(
+                                                        notification.id,
+                                                    ).url,
+                                                    {},
+                                                    'Notification marked as read.',
+                                                )
+                                            }
+                                        >
+                                            <Check />{' '}
+                                            {pending === notification.id
+                                                ? 'Saving...'
+                                                : 'Mark read'}
                                         </Button>
                                     )}
-                                    {notification.data.kind === 'connection_request' && !notification.read_at && notification.data.connection_request_id && (
-                                        <div className="flex gap-2">
-                                            <Button size="sm" onClick={() => router.patch(updateConnection(notification.data.connection_request_id!).url, { status: 'accepted' })}>Accept</Button>
-                                            <Button size="sm" variant="outline" onClick={() => router.patch(updateConnection(notification.data.connection_request_id!).url, { status: 'declined' })}>Decline</Button>
-                                        </div>
-                                    )}
+                                    {notification.data.kind ===
+                                        'connection_request' &&
+                                        !notification.read_at &&
+                                        notification.data
+                                            .connection_request_id && (
+                                            <div className="flex flex-wrap gap-2">
+                                                <Button
+                                                    size="sm"
+                                                    disabled={pending !== null}
+                                                    onClick={() =>
+                                                        submit(
+                                                            notification.id,
+                                                            'patch',
+                                                            updateConnection(
+                                                                notification
+                                                                    .data
+                                                                    .connection_request_id!,
+                                                            ).url,
+                                                            {
+                                                                status: 'accepted',
+                                                            },
+                                                            'Connection accepted. You can now chat.',
+                                                        )
+                                                    }
+                                                >
+                                                    Accept
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    disabled={pending !== null}
+                                                    onClick={() =>
+                                                        submit(
+                                                            notification.id,
+                                                            'patch',
+                                                            updateConnection(
+                                                                notification
+                                                                    .data
+                                                                    .connection_request_id!,
+                                                            ).url,
+                                                            {
+                                                                status: 'declined',
+                                                            },
+                                                            'Connection request declined.',
+                                                        )
+                                                    }
+                                                >
+                                                    Decline
+                                                </Button>
+                                            </div>
+                                        )}
                                 </CardContent>
                             </Card>
                         ))}
                     </section>
                 ) : (
                     <Card>
-                        <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-                            <Bell className="size-10 text-muted-foreground" />
-                            <h2 className="text-lg font-semibold">You’re all caught up</h2>
-                            <p className="text-sm text-muted-foreground">New connection requests and updates will show up here.</p>
+                        <CardContent className="flex flex-col items-center gap-3 px-5 py-12 text-center">
+                            <Bell className="text-muted-foreground size-10" />
+                            <h2 className="text-lg font-semibold">
+                                You’re all caught up
+                            </h2>
+                            <p className="text-muted-foreground text-sm">
+                                New connection requests and updates will show up
+                                here.
+                            </p>
                         </CardContent>
                     </Card>
                 )}
 
                 {notifications.links.length > 3 && (
-                    <nav className="flex flex-wrap justify-center gap-2" aria-label="Notification pages">
+                    <nav
+                        className="flex flex-wrap justify-center gap-2"
+                        aria-label="Notification pages"
+                    >
                         {notifications.links.map((link) => (
-                            <Button key={link.label} variant={link.active ? 'default' : 'outline'} size="sm" disabled={!link.url} onClick={() => link.url && router.visit(link.url)}>
-                                {link.label.replace(/<[^>]*>/g, '').replace('&laquo;', '«').replace('&raquo;', '»')}
+                            <Button
+                                key={link.label}
+                                variant={link.active ? 'default' : 'outline'}
+                                size="sm"
+                                disabled={!link.url}
+                                onClick={() =>
+                                    link.url && router.visit(link.url)
+                                }
+                            >
+                                {link.label
+                                    .replace(/<[^>]*>/g, '')
+                                    .replace('&laquo;', '«')
+                                    .replace('&raquo;', '»')}
                             </Button>
                         ))}
                     </nav>
