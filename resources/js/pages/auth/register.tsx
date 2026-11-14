@@ -30,16 +30,20 @@ export default function Register({ passwordRules }: Props) {
                                 <Label htmlFor="name">Name</Label>
                                 <Input
                                     id="name"
+                                    aria-invalid={Boolean(errors.name)}
+                                    aria-describedby={
+                                        errors.name ? 'name-error' : undefined
+                                    }
                                     type="text"
                                     required
                                     autoFocus
-                                    tabIndex={1}
                                     autoComplete="name"
                                     name="name"
                                     placeholder="Full name"
-                                    className="h-11 bg-background"
+                                    className="bg-background h-11"
                                 />
                                 <InputError
+                                    id="name-error"
                                     message={errors.name}
                                     className="mt-2"
                                 />
@@ -49,30 +53,44 @@ export default function Register({ passwordRules }: Props) {
                                 <Label htmlFor="email">Email address</Label>
                                 <Input
                                     id="email"
+                                    aria-invalid={Boolean(errors.email)}
+                                    aria-describedby={
+                                        errors.email ? 'email-error' : undefined
+                                    }
                                     type="email"
                                     required
-                                    tabIndex={2}
                                     autoComplete="email"
                                     name="email"
                                     placeholder="email@example.com"
-                                    className="h-11 bg-background"
+                                    className="bg-background h-11"
                                 />
-                                <InputError message={errors.email} />
+                                <InputError
+                                    id="email-error"
+                                    message={errors.email}
+                                />
                             </div>
 
                             <div className="grid gap-2">
                                 <Label htmlFor="password">Password</Label>
                                 <PasswordInput
                                     id="password"
+                                    aria-invalid={Boolean(errors.password)}
+                                    aria-describedby={
+                                        errors.password
+                                            ? 'password-error'
+                                            : undefined
+                                    }
                                     required
-                                    tabIndex={3}
                                     autoComplete="new-password"
                                     name="password"
                                     placeholder="Password"
                                     passwordrules={passwordRules}
-                                    className="h-11 bg-background"
+                                    className="bg-background h-11"
                                 />
-                                <InputError message={errors.password} />
+                                <InputError
+                                    id="password-error"
+                                    message={errors.password}
+                                />
                             </div>
 
                             <div className="grid gap-2">
@@ -81,23 +99,30 @@ export default function Register({ passwordRules }: Props) {
                                 </Label>
                                 <PasswordInput
                                     id="password_confirmation"
+                                    aria-invalid={Boolean(
+                                        errors.password_confirmation,
+                                    )}
+                                    aria-describedby={
+                                        errors.password_confirmation
+                                            ? 'password_confirmation-error'
+                                            : undefined
+                                    }
                                     required
-                                    tabIndex={4}
                                     autoComplete="new-password"
                                     name="password_confirmation"
                                     placeholder="Confirm password"
                                     passwordrules={passwordRules}
-                                    className="h-11 bg-background"
+                                    className="bg-background h-11"
                                 />
                                 <InputError
+                                    id="password_confirmation-error"
                                     message={errors.password_confirmation}
                                 />
                             </div>
 
                             <Button
                                 type="submit"
-                                className="mt-2 h-11 w-full bg-[#306B3C] text-white hover:bg-[#285a32]"
-                                tabIndex={5}
+                                className="bg-primary text-primary-foreground hover:bg-primary/90 mt-2 h-11 w-full"
                                 data-test="register-user-button"
                             >
                                 {processing && <Spinner />}
@@ -105,11 +130,9 @@ export default function Register({ passwordRules }: Props) {
                             </Button>
                         </div>
 
-                        <div className="text-center text-sm text-muted-foreground">
+                        <div className="text-muted-foreground text-center text-sm">
                             Already have an account?{' '}
-                            <TextLink href={login()} tabIndex={6}>
-                                Log in
-                            </TextLink>
+                            <TextLink href={login()}>Log in</TextLink>
                         </div>
                     </>
                 )}
