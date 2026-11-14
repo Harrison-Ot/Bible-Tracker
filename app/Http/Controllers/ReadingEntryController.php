@@ -39,6 +39,17 @@ class ReadingEntryController extends Controller
         return to_route('dashboard')->with('success', 'Reading logged.');
     }
 
+    public function update(Request $request, ReadingEntry $readingEntry): RedirectResponse
+    {
+        abort_unless($readingEntry->user_id === $request->user()->id, 403);
+        $validated = $request->validate([
+            'note' => ['present', 'nullable', 'string', 'max:1000'],
+        ]);
+        $readingEntry->update(['note' => $validated['note']]);
+
+        return back()->with('success', 'Reflection updated.');
+    }
+
     public function destroy(ReadingEntry $readingEntry): RedirectResponse
     {
         // only the owner can delete their own entry
