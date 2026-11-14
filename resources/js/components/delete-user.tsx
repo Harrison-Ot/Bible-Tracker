@@ -67,21 +67,32 @@ export default function DeleteUser() {
                                 <>
                                     <div className="grid gap-2">
                                         <Label
-                                            htmlFor="password"
+                                            htmlFor="delete-password"
                                             className="sr-only"
                                         >
                                             Password
                                         </Label>
 
                                         <PasswordInput
-                                            id="password"
+                                            id="delete-password"
+                                            aria-invalid={Boolean(
+                                                errors.password,
+                                            )}
+                                            aria-describedby={
+                                                errors.password
+                                                    ? 'delete-password-error'
+                                                    : undefined
+                                            }
                                             name="password"
                                             ref={passwordInput}
                                             placeholder="Password"
                                             autoComplete="current-password"
                                         />
 
-                                        <InputError message={errors.password} />
+                                        <InputError
+                                            id="delete-password-error"
+                                            message={errors.password}
+                                        />
                                     </div>
 
                                     <DialogFooter className="gap-2">
