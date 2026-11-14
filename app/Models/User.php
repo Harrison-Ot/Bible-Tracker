@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
@@ -47,8 +48,15 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return [
             'email_verified_at' => 'datetime',
+            'last_reading' => 'array',
             'password' => 'hashed',
         ];
+    }
+
+    /** @return HasOne<ReadingReminder, $this> */
+    public function readingReminder(): HasOne
+    {
+        return $this->hasOne(ReadingReminder::class);
     }
 
     /** @return HasMany<ReadingEntry, $this> */
