@@ -33,26 +33,31 @@ export default function Login({ status, canResetPassword }: Props) {
                                 <Label htmlFor="email">Email address</Label>
                                 <Input
                                     id="email"
+                                    aria-invalid={Boolean(errors.email)}
+                                    aria-describedby={
+                                        errors.email ? 'email-error' : undefined
+                                    }
                                     type="email"
                                     name="email"
                                     required
                                     autoFocus
-                                    tabIndex={1}
                                     autoComplete="email"
                                     placeholder="email@example.com"
-                                    className="h-11 bg-background"
+                                    className="bg-background h-11"
                                 />
-                                <InputError message={errors.email} />
+                                <InputError
+                                    id="email-error"
+                                    message={errors.email}
+                                />
                             </div>
 
                             <div className="grid gap-2">
-                                <div className="flex items-center">
+                                <div className="flex flex-wrap items-center gap-2">
                                     <Label htmlFor="password">Password</Label>
                                     {canResetPassword && (
                                         <TextLink
                                             href={request()}
-                                            className="ml-auto text-sm font-medium text-primary underline-offset-4 hover:underline"
-                                            tabIndex={5}
+                                            className="text-primary ml-auto text-sm font-medium underline-offset-4 hover:underline"
                                         >
                                             Forgot your password?
                                         </TextLink>
@@ -60,29 +65,32 @@ export default function Login({ status, canResetPassword }: Props) {
                                 </div>
                                 <PasswordInput
                                     id="password"
+                                    aria-invalid={Boolean(errors.password)}
+                                    aria-describedby={
+                                        errors.password
+                                            ? 'password-error'
+                                            : undefined
+                                    }
                                     name="password"
                                     required
-                                    tabIndex={2}
                                     autoComplete="current-password"
                                     placeholder="Password"
-                                    className="h-11 bg-background"
+                                    className="bg-background h-11"
                                 />
-                                <InputError message={errors.password} />
+                                <InputError
+                                    id="password-error"
+                                    message={errors.password}
+                                />
                             </div>
 
                             <div className="flex items-center gap-3">
-                                <Checkbox
-                                    id="remember"
-                                    name="remember"
-                                    tabIndex={3}
-                                />
+                                <Checkbox id="remember" name="remember" />
                                 <Label htmlFor="remember">Remember me</Label>
                             </div>
 
                             <Button
                                 type="submit"
-                                className="mt-2 h-11 w-full bg-[#306B3C] text-white hover:bg-[#285a32]"
-                                tabIndex={4}
+                                className="bg-primary text-primary-foreground hover:bg-primary/90 mt-2 h-11 w-full"
                                 disabled={processing}
                                 data-test="login-button"
                             >
@@ -91,18 +99,16 @@ export default function Login({ status, canResetPassword }: Props) {
                             </Button>
                         </div>
 
-                        <div className="text-center text-sm text-muted-foreground">
+                        <div className="text-muted-foreground text-center text-sm">
                             Don't have an account?{' '}
-                            <TextLink href={register()} tabIndex={5}>
-                                Sign up
-                            </TextLink>
+                            <TextLink href={register()}>Sign up</TextLink>
                         </div>
                     </>
                 )}
             </Form>
 
             {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
+                <div className="mb-4 text-center text-sm font-medium text-green-700 dark:text-green-400">
                     {status}
                 </div>
             )}
