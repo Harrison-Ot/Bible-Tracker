@@ -21,17 +21,17 @@ export default function BibleIndex({ translation, books }: BibleIndexProps) {
     return (
         <>
             <Head title="The Bible" />
-            <div className="min-h-screen bg-[#F7FAF6]">
+            <div className="bg-background min-h-screen">
                 <div className="mx-auto max-w-4xl space-y-8 p-6 sm:p-10">
                     {/* Header */}
-                    <div className="border-b border-[#D9E3D3] pb-6">
-                        <span className="inline-block rounded-full bg-[#2F6B3C]/10 px-3 py-1 text-xs font-semibold tracking-wide text-[#2F6B3C] uppercase">
+                    <div className="border-border border-b pb-6">
+                        <span className="bg-primary/10 text-primary inline-block rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase">
                             {translation.toUpperCase()}
                         </span>
-                        <h1 className="mt-3 text-3xl font-bold tracking-tight text-[#16241A]">
+                        <h1 className="text-foreground mt-3 text-3xl font-bold tracking-tight">
                             The Bible
                         </h1>
-                        <p className="mt-1 text-sm text-[#5B6B5D]">
+                        <p className="text-muted-foreground mt-1 text-sm">
                             {books.length} books — pick one to see its chapters.
                         </p>
                     </div>
@@ -40,7 +40,7 @@ export default function BibleIndex({ translation, books }: BibleIndexProps) {
                         <div className="min-w-48 flex-1">
                             <label
                                 htmlFor="book-search"
-                                className="mb-2 block text-sm font-medium text-[#16241A]"
+                                className="text-foreground mb-2 block text-sm font-medium"
                             >
                                 Find a book
                             </label>
@@ -52,13 +52,13 @@ export default function BibleIndex({ translation, books }: BibleIndexProps) {
                                     setSearch(event.target.value)
                                 }
                                 placeholder="Search by name or abbreviation"
-                                className="w-full rounded-lg border border-[#D9E3D3] bg-white px-4 py-3 text-[#16241A] focus:ring-2 focus:ring-[#2F6B3C]"
+                                className="border-border bg-card text-foreground focus:ring-ring w-full rounded-lg border px-4 py-3 focus:ring-2"
                             />
                         </div>
                         <div>
                             <label
                                 htmlFor="translation"
-                                className="mb-2 block text-sm font-medium text-[#16241A]"
+                                className="text-foreground mb-2 block text-sm font-medium"
                             >
                                 Translation
                             </label>
@@ -70,7 +70,7 @@ export default function BibleIndex({ translation, books }: BibleIndexProps) {
                                         translation: event.target.value,
                                     })
                                 }
-                                className="rounded-lg border border-[#D9E3D3] bg-white px-4 py-3 text-[#16241A]"
+                                className="border-border bg-card text-foreground rounded-lg border px-4 py-3"
                             >
                                 <option value="web">World English Bible</option>
                                 <option value="kjv">King James Version</option>
@@ -82,7 +82,7 @@ export default function BibleIndex({ translation, books }: BibleIndexProps) {
                             </select>
                         </div>
                     </div>
-                    <p role="status" className="text-sm text-[#5B6B5D]">
+                    <p role="status" className="text-muted-foreground text-sm">
                         {matchingBooks.length
                             ? `${matchingBooks.length} books available`
                             : 'No matching books. Try another name.'}
@@ -93,11 +93,11 @@ export default function BibleIndex({ translation, books }: BibleIndexProps) {
                             <Link
                                 key={book.id}
                                 href={`/bible/${book.id}?translation=${encodeURIComponent(translation)}`}
-                                className="group relative flex items-center justify-between rounded-lg border border-[#D9E3D3] bg-white px-4 py-3.5 text-sm font-medium text-[#16241A] shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#2F6B3C] hover:shadow-md active:translate-y-0"
+                                className="group border-border bg-card text-foreground hover:border-primary relative flex items-center justify-between rounded-lg border px-4 py-3.5 text-sm font-medium shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
                             >
                                 <span className="truncate">{book.name}</span>
                                 <svg
-                                    className="h-4 w-4 shrink-0 text-[#B9C7B4] transition-colors group-hover:text-[#2F6B3C]"
+                                    className="text-muted-foreground group-hover:text-primary h-4 w-4 shrink-0 transition-colors"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -110,7 +110,7 @@ export default function BibleIndex({ translation, books }: BibleIndexProps) {
                                     />
                                 </svg>
                                 {/* left accent bar on hover */}
-                                <span className="absolute top-1/2 left-0 h-0 w-0.5 -translate-y-1/2 bg-[#2F6B3C] transition-all duration-200 group-hover:h-2/3" />
+                                <span className="bg-primary absolute top-1/2 left-0 h-0 w-0.5 -translate-y-1/2 transition-all duration-200 group-hover:h-2/3" />
                             </Link>
                         ))}
                     </div>
