@@ -11,6 +11,7 @@ import { edit as editSecurity } from '@/routes/security';
 import type { NavItem } from '@/types';
 
 const sidebarNavItems: NavItem[] = [
+    { title: 'Reading reminders', href: '/settings/reminders', icon: null },
     {
         title: 'Profile',
         href: edit(),
@@ -32,7 +33,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
     const { isCurrentOrParentUrl } = useCurrentUrl();
 
     return (
-        <div className="px-4 py-6">
+        <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:p-8">
             <Heading
                 title="Settings"
                 description="Manage your profile and account settings"
@@ -54,7 +55,14 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                                     'bg-muted': isCurrentOrParentUrl(item.href),
                                 })}
                             >
-                                <Link href={item.href}>
+                                <Link
+                                    href={item.href}
+                                    aria-current={
+                                        isCurrentOrParentUrl(item.href)
+                                            ? 'page'
+                                            : undefined
+                                    }
+                                >
                                     {item.icon && (
                                         <item.icon className="h-4 w-4" />
                                     )}
@@ -67,7 +75,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
 
                 <Separator className="my-6 lg:hidden" />
 
-                <div className="flex-1 md:max-w-2xl">
+                <div className="min-w-0 flex-1 md:max-w-2xl">
                     <section className="max-w-xl space-y-12">
                         {children}
                     </section>
