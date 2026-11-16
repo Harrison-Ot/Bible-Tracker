@@ -1,8 +1,8 @@
 # Bible Tracker tasks
 
-Updated: 2026-11-14
+Updated: 2026-11-16
 
-Status: [ ] planned, [x] complete. Phases 1 and 2 are implemented and verified with automated checks and synthetic browser data. Phases 3 and 4 are also implemented. Physical-device/live-data review and the remaining phases are planned.
+Status: [ ] planned, [x] complete. Phases 1-6 are implemented and verified with automated checks and synthetic browser data. Physical-device/live-data review and host reminder delivery setup remain planned.
 
 ## Phase 1 - Daily reading experience (complete)
 - [x] Redesign the dashboard around Continue Reading, compact statistics, and today's plans.
@@ -42,16 +42,16 @@ Status: [ ] planned, [x] complete. Phases 1 and 2 are implemented and verified w
 - [x] Add private progress reports for unique chapters, all 66 books and the last eight weeks of activity.
 - [x] Add completion feedback, weekly-goal progress and chapter/book/plan milestones.
 
-## Phase 5 - Group reading
-- [ ] Implement group creation, invitations, membership and roles.
-- [ ] Add shared reading plans and passage discussions.
-- [ ] Add privacy controls and moderation for group content.
+## Phase 5 - Group reading (complete)
+- [x] Implement private group creation, account-bound invitations, membership and owner/admin/member roles.
+- [x] Add independent shared guided plans, explicit journal-verified check-ins and passage discussions.
+- [x] Add membership privacy, post removal/locking, role management, ownership transfer and deletion controls.
 
-## Phase 6 - Offline passages
-- [ ] Confirm translation permissions and define downloadable content limits.
-- [ ] Add explicit passage downloads and offline availability indicators.
-- [ ] Add download management and storage controls.
-- [ ] Queue offline reading logs and handle synchronization without duplicates.
+## Phase 6 - Offline passages (complete)
+- [x] Confirm WEB permissions and limit explicit downloads to 50 chapters or 10 MB per device.
+- [x] Add explicit chapter downloads, availability indicators and a public offline reader with cold-reload support.
+- [x] Add download removal, persistence requests, storage usage and explicit device reset controls.
+- [x] Add opt-in account-bound offline logs, same-account sync, durable replay receipts and recoverable failures.
 
 ## Verification log
 - `php artisan test --compact`: 93 passed, 4 skipped; 520 assertions (97 tests total).
@@ -129,3 +129,35 @@ Status: [ ] planned, [x] complete. Phases 1 and 2 are implemented and verified w
 - Headless Chrome with synthetic data: plans/creator/reports at 320/390/1440px in light/dark; unique IDs, pause/resume, complete/catch-up, schedule preservation, custom range/pace/day creation, weekly-goal save/reload and network/HTTP failure recovery.
 - Browser screenshots/report: `storage/app/private/phase-four-review/`; local runner: `storage/app/private/ui-review/phase-four-review.mjs` (ignored by Git).
 - Applied migration `2026_11_14_000004_add_flexible_plans_and_reading_goals` to the configured database. No real user plans or journal entries were created by browser verification.
+
+## Phase 5 implementation and verification (2026-11-16)
+- Added Reading groups to the sidebar, with a private group list, in-app invitation inbox and responsive group workspace in both themes. Drafts survive recoverable failures and discussion filtering; validation feedback belongs to the submitted form.
+- Owners create/edit/delete groups, manage admin roles and transfer ownership with exact-name confirmation. Admins manage invitations, remove regular members, moderate discussions and advance shared readings. Members can leave; owners must transfer ownership or delete their groups before leaving or deleting their account.
+- Invitations are addressed only to verified accepted connections, expire after seven days and require acceptance by that account. Repeated pending invitations do not extend expiry. Revoking, leaving, removal and admin demotion invalidate affected pending invitations. Old accepted invitations and old creation tokens cannot restore removed memberships.
+- Invitations appear inside Reading groups; no invitation emails or WhatsApp messages are sent. Group membership and content are private. Client props contain member names/roles and explicitly shared content, without other members' emails, journals, notes, saved verses or personal reading history.
+- Managers choose public guided plans. Shared runs have their own cursor and start date; replacing a run retains earlier run/check-in records in the database. The workspace displays the current run. Moving or completing a shared reading never creates journal entries or changes personal plan progress.
+- Members explicitly share a check-in after logging every assigned chapter in their own journal from the run's start through today. Duplicate check-ins and stale advancement requests are safe. Current check-in lists exclude departed members.
+- Passage reflections validate canonical book/chapter bounds and a 2,000-character plain-text limit. Request tokens prevent duplicate posts. Authors/moderators can permanently clear a reflection's text; a tombstone remains and retrying cannot restore it. Managers can pause member posting while retaining reading access.
+- Leaving/removal retains prior posts and check-in records. Account deletion removes that account's posts and check-ins. Deleting a group removes its group data while preserving members' personal journals and plans.
+- Mutations recheck current membership/roles under group row locks. Nested posts/invitations are group-scoped; private personal plans cannot be shared. Ownership transfer and group deletion require the current group name.
+- `php artisan test --compact`: 166 passed, 4 skipped; 1,406 assertions across 170 tests. All 26 new Phase 5 tests passed.
+- PHP static analysis: zero errors. TypeScript, changed frontend lint, production build, formatting and diff whitespace checks passed.
+- Repaired the local mixed npm/pnpm dependency installation using the existing pnpm lockfile and cached packages, preserving the stale package in ignored private storage. No dependency versions or lockfiles were changed by this repair.
+- Headless Chrome with synthetic accounts and mocked mutations: group list and owner/member workspace at 320/390/1440px in light/dark; no horizontal overflow, unique IDs, escaped text, creation/acceptance, check-in, plan completion/restart, post token rotation/removal, draft-preserving filters, invitation/revoke controls, locked member/admin permissions, account ownership guard, rename/transfer and network/HTTP/validation feedback.
+- Browser screenshots/report: `storage/app/private/phase-five-review/`; local runner: `storage/app/private/ui-review/phase-five-review.mjs` (ignored by Git). These checks do not establish physical-device or live-account integration results.
+- Applied migration `2026_11_14_000005_add_private_group_reading` to the configured database; all migrations are current. No real invitations, posts, check-ins, messages or emails were generated by automated verification.
+
+## Phase 6 implementation and verification (2026-11-16)
+- Confirmed WEB public-domain text permissions with the publisher: https://www.ebible.org/eng-web/copyright.htm. Provider usage terms prohibit full-Bible API downloads: https://bible-api.com/#terms-of-use. Offline downloads support WEB only, one explicit chapter at a time, with a device limit of 50 chapters/10 MB and a per-chapter payload cap of 256 KiB. The authenticated download endpoint is rate limited and reuses the existing server passage cache.
+- Added Downloads to the sidebar and chapter download/availability controls to the reader. The server validates canonical book/chapter bounds, provider translation/license metadata, ordered verse numbers and nonempty text. Only public passage text and licensing metadata enter device downloads; personal page props and saved verses are excluded.
+- Added a standalone public `/offline` reader. The service worker prepares its entry, imports, styles and font assets before a download is confirmed. Readiness checks also require the public shell to reference its built manifest entry; a development-only shell cannot claim success. A disconnected full-page navigation or Inertia visit can open the public shell; cold reloads work for downloaded chapters. Other translations require an explicit WEB selection rather than silently changing text.
+- Device IndexedDB transactions enforce chapter count/size and a 200-log device queue without evicting earlier records. Failed, blocked or full storage does not produce a success claim. Download removal keeps pending logs. An explicit confirmed device reset clears all local downloads, queues and logging opt-ins, without deleting server journal entries.
+- Offline logging requires an opt-in on the signed-in account's Downloads page. The offline reader queues chapter/date records for the last enabled account; it does not expose account names, emails or existing private journal history. Normal sign-out disables further offline logging; a different signed-in account also clears the previous opt-in. Existing queues remain bound to their original account.
+- The main WEB reader can queue an explicit Mark as read while disconnected or after a network failure, when the account opted in. Feedback distinguishes device-pending logs from confirmed journal/streak updates. Offline logs contain chapter/date only, without reflections, highlights or bookmarks.
+- Returning to an authenticated app page or reconnecting syncs only that account's pending logs and refreshes page data after confirmation. Downloads also offers manual retry/review/discard controls. Authentication, session, validation, server and network failures retain unconfirmed records. Validation/conflict failures wait for explicit retry. Future dates are checked against the server's current application date; they are never silently shifted.
+- The sync endpoint verifies the submitted owner against the current verified session and serializes writes with a user row lock. Durable account/token/payload-hash receipts prevent duplicate application after lost responses or concurrent retries. Existing matching online entries are reconciled without overwriting notes. A deleted confirmed entry is not recreated by a later replay; receipts cascade with the account.
+- Service-worker caching is limited to the public offline shell, build assets and public fallback/icons. Account HTML, JSON, avatars and mutation responses are not cached. The prior static-cache version is removed on activation. Offline saved-verse changes and account/group/plan screens still require connectivity. No sync occurs while the app is closed.
+- `php artisan test --compact`: 181 passed, 4 skipped; 1,525 assertions across 185 tests. All 15 new Phase 6 tests passed. PHP static analysis, TypeScript, changed frontend lint, production build, formatting and whitespace checks passed.
+- Browser review used real Chrome service workers, Cache Storage and IndexedDB with synthetic accounts and mocked API responses. Checks covered both themes at 320/390/1440px, cold disconnected reloads, offline Inertia navigation, translation selection, pending-log deduplication, ambiguous responses/retries, account switching, validation/session recovery, chapter/byte/queue limits, download removal, device reset, blocked storage and sign-out.
+- Browser screenshots/report: `storage/app/private/phase-six-review/`; local runner: `storage/app/private/ui-review/phase-six-review.mjs` (ignored by Git). These results do not establish physical-device/browser-specific storage eviction or production delivery behavior.
+- Applied migration `2026_11_16_000006_create_offline_reading_receipts_table` to the configured database. Automated verification created no live-account downloads, queued logs, journal entries, messages or emails; provider calls in backend tests were faked.
