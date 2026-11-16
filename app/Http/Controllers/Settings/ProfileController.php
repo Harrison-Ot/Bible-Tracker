@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
+use App\Models\User;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -22,6 +25,7 @@ class ProfileController extends Controller
         return Inertia::render('settings/profile', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
+            'ownedGroupCount' => $request->user()->ownedGroups()->count(),
         ]);
     }
 
@@ -50,9 +54,14 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
+        DB::transaction(function () use ($user): void {
+            $locked = User::query()->lockForUpdate()->findOrFail($user->id);
+            if ($locked->ownedGroups()->exists()) {
+                throw ValidationException::withMessages(['password' => 'Transfer ownership or delete your groups before deleting your account.']);
+            }
+            $locked->delete();
+        }, 3);
         Auth::logout();
-
-        $user->delete();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
