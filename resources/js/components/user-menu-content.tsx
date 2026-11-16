@@ -1,4 +1,6 @@
 import { Link, router } from '@inertiajs/react';
+import { useRef, type MouseEvent } from 'react';
+import { setLoggingOwner } from '@/lib/offline-db';
 import { LogOut, Settings } from 'lucide-react';
 import {
     DropdownMenuGroup,
@@ -19,9 +21,26 @@ type Props = {
 export function UserMenuContent({ user }: Props) {
     const cleanup = useMobileNavigation();
 
-    const handleLogout = () => {
+    const leaving = useRef(false);
+    const handleLogout = (event: MouseEvent) => {
+        event.preventDefault();
+        if (leaving.current) return;
+        leaving.current = true;
         cleanup();
         router.flushAll();
+        void setLoggingOwner(null)
+            .catch(() => undefined)
+            .finally(() => {
+                router.post(
+                    logout.url(),
+                    {},
+                    {
+                        onFinish: () => {
+                            leaving.current = false;
+                        },
+                    },
+                );
+            });
     };
 
     return (

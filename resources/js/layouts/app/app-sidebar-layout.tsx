@@ -3,6 +3,7 @@ import { AppShell } from '@/components/app-shell';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
 import MobileNavigation from '@/components/mobile-navigation';
+import OfflineSyncBridge from '@/components/offline-sync-bridge';
 import { useReadingMode } from '@/hooks/use-reading-mode';
 import type { AppLayoutProps } from '@/types';
 import type { CSSProperties } from 'react';
@@ -25,6 +26,7 @@ export default function AppSidebarLayout({
                 }
             >
                 {!focused && <AppSidebarHeader breadcrumbs={breadcrumbs} />}
+                <OfflineSyncBridge />
                 {children}
             </AppContent>
             {!focused && <MobileNavigation />}
