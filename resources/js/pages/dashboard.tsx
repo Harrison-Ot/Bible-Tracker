@@ -35,6 +35,7 @@ interface DashboardProps {
         name: string;
         currentDay: number;
         durationDays: number;
+        nextReadOn: string | null;
     }[];
 }
 
@@ -213,9 +214,9 @@ export default function Dashboard({
                                                 />
                                             </div>
                                             <p className="text-muted-foreground mt-1 text-xs">
-                                                Day {plan.currentDay} of{' '}
-                                                {plan.durationDays} · Open
-                                                today's passages
+                                                Reading {plan.currentDay} of{' '}
+                                                {plan.durationDays} · Open next
+                                                passages
                                             </p>
                                             <progress
                                                 aria-label={`${plan.name} completed days`}
