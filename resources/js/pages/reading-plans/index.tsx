@@ -1,201 +1,465 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { BookOpen, BookOpenCheck, CalendarDays, Check, Clock3, Sparkles } from 'lucide-react';
-import { store as startReadingPlan } from '@/actions/App/Http/Controllers/ReadingPlanController';
-import { index as readingPlansIndex } from '@/actions/App/Http/Controllers/ReadingPlanController';
-import { completeDay as completeReadingPlanDay } from '@/actions/App/Http/Controllers/ReadingPlanController';
-import { dashboard } from '@/routes';
+import { Head, Link } from '@inertiajs/react';
+import { BookOpen, Check, Pause, Play, Plus, RotateCw } from 'lucide-react';
 import { useState } from 'react';
+import ReadingDays, { readingDayNames } from '@/components/reading-days';
+import ActionFeedback from '@/components/action-feedback';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useActionRequest } from '@/hooks/use-action-request';
 type Plan = {
     id: number;
     name: string;
     slug: string;
+    description: string | null;
+    isCustom: boolean;
     durationDays: number;
     currentDay: number | null;
     startedOn: string | null;
     isComplete: boolean;
-    todayReadings: { book: string; chapter: number; reference: string; url: string; isRead: boolean }[];
+    isPaused: boolean;
+    readingDays: number[];
+    nextReadOn: string | null;
+    isOverdue: boolean;
+    todayReadings: { reference: string; url: string; isRead: boolean }[];
     isTodayComplete: boolean;
 };
-
-const planDetails: Record<string, { content: string; idealFor: string; description: string; accent: string }> = {
-    blueprint: {
-        content: 'Genesis through Revelation',
-        idealFor: 'Long-term daily discipline',
-        description: 'A complete journey through every book of the Bible.',
-        accent: 'from-emerald-700 to-green-600',
-    },
-    'new-testament-challenge': {
-        content: 'Matthew through Revelation',
-        idealFor: 'Medium-term focus',
-        description: 'Follow the life of Jesus and the growth of the early church.',
-        accent: 'from-sky-700 to-teal-600',
-    },
-    'gospels-only': {
-        content: 'Matthew, Mark, Luke, and John',
-        idealFor: 'Quick start / Beginners',
-        description: 'Get to know Jesus through the four Gospel accounts.',
-        accent: 'from-amber-700 to-orange-600',
-    },
-    'wisdom-literature': {
-        content: 'Psalms, Proverbs, and Ecclesiastes',
-        idealFor: 'Devotional reflection',
-        description: 'Spend time with Scripture’s prayers, poetry, and wisdom.',
-        accent: 'from-violet-700 to-indigo-600',
-    },
+const descriptions: Record<string, string> = {
+    blueprint: 'A complete journey from Genesis through Revelation.',
+    'new-testament-challenge':
+        'Follow Jesus and the growth of the early church.',
+    'gospels-only': 'Meet Jesus in Matthew, Mark, Luke, and John.',
+    'wisdom-literature':
+        'Spend time with the prayers, poetry, and wisdom of Scripture.',
 };
-
-export default function ReadingPlansIndex({ plans, errors }: { plans: Plan[]; errors?: { readingPlan?: string } }) {
-    const [processingPlanId, setProcessingPlanId] = useState<number | null>(null);
-
-    const submitPlanAction = (plan: Plan) => {
-        const action = plan.currentDay && !plan.isComplete
-            ? completeReadingPlanDay(plan.id)
-            : startReadingPlan(plan.id);
-
-        router.post(action.url, {}, {
-            onStart: () => setProcessingPlanId(plan.id),
-            onFinish: () => setProcessingPlanId(null),
-        });
-    };
-
+function ScheduleEditor({
+    plan,
+    today,
+    disabled,
+    save,
+}: {
+    plan: Plan;
+    today: string;
+    disabled: boolean;
+    save: (days: number[], date: string) => void;
+}) {
+    const [days, setDays] = useState(plan.readingDays);
+    const [date, setDate] = useState(
+        plan.nextReadOn && plan.nextReadOn >= today ? plan.nextReadOn : today,
+    );
+    return (
+        <details className="rounded-lg border p-3">
+            <summary className="focus-visible:ring-ring cursor-pointer rounded-sm text-sm font-medium focus-visible:ring-2">
+                Adjust remaining schedule
+            </summary>
+            <form
+                className="mt-4 space-y-4"
+                onSubmit={(event) => {
+                    event.preventDefault();
+                    save(days, date);
+                }}
+            >
+                <ReadingDays
+                    id={`schedule-${plan.id}`}
+                    value={days}
+                    disabled={disabled}
+                    onChange={(day, checked) =>
+                        setDays((previous) =>
+                            checked
+                                ? [...previous, day].sort((a, b) => a - b)
+                                : previous.filter((value) => value !== day),
+                        )
+                    }
+                />
+                <div className="space-y-2">
+                    <Label htmlFor={`schedule-date-${plan.id}`}>
+                        Schedule from
+                    </Label>
+                    <Input
+                        id={`schedule-date-${plan.id}`}
+                        type="date"
+                        min={today}
+                        required
+                        value={date}
+                        disabled={disabled}
+                        onChange={(event) => setDate(event.target.value)}
+                    />
+                </div>
+                <p className="text-muted-foreground text-xs leading-relaxed">
+                    Moves the next unfinished reading to a selected weekday on
+                    or after this date. Completed readings stay complete.
+                </p>
+                <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={disabled || !days.length}
+                >
+                    Save schedule
+                </Button>
+            </form>
+        </details>
+    );
+}
+export default function ReadingPlansIndex({
+    plans,
+    today,
+    errors,
+}: {
+    plans: Plan[];
+    today: string;
+    errors?: { readingPlan?: string };
+}) {
+    const { pending, feedback, submit } = useActionRequest();
+    const action = (plan: Plan, suffix: string, message: string) =>
+        submit(
+            `plan-${plan.id}`,
+            'post',
+            `/reading-plans/${plan.id}/${suffix}`,
+            plan.currentDay ? { expected_day: plan.currentDay } : {},
+            message,
+        );
     return (
         <>
-            <Head title="Reading Plans" />
-            <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 p-4 md:p-8">
-                <header className="space-y-3">
-                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">A rhythm for the Word</p>
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                        <div className="space-y-2">
-                            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Choose your reading plan</h1>
-                            <p className="max-w-2xl text-muted-foreground">Choose a pace that fits your season. You can start a plan now and return to it anytime.</p>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <BookOpenCheck className="size-4 text-primary" />
-                            Four guided journeys
-                        </div>
+            <Head title="Reading plans" />
+            <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
+                <header className="flex flex-wrap items-end justify-between gap-4">
+                    <div>
+                        <p className="text-primary mb-1 text-sm font-medium">
+                            A rhythm for the Word
+                        </p>
+                        <h1 className="text-3xl font-semibold tracking-tight">
+                            Your reading plans
+                        </h1>
+                        <p className="text-muted-foreground mt-2 max-w-2xl text-sm leading-relaxed">
+                            Choose a guided journey or create a private plan.
+                            Readings logged since a plan started count toward
+                            its next passages.
+                        </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        <Button asChild variant="outline">
+                            <Link href="/reports">View progress</Link>
+                        </Button>
+                        <Button asChild>
+                            <Link href="/reading-plans/create">
+                                <Plus aria-hidden="true" />
+                                Create a plan
+                            </Link>
+                        </Button>
                     </div>
                 </header>
-
-                {errors?.readingPlan && (
-                    <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-                        {errors.readingPlan}
-                    </p>
-                )}
-
+                <ActionFeedback
+                    feedback={
+                        pending
+                            ? { error: false, message: 'Updating your plan...' }
+                            : (feedback ??
+                              (errors?.readingPlan
+                                  ? { error: true, message: errors.readingPlan }
+                                  : null))
+                    }
+                />
                 {plans.length ? (
-                    <section className="grid gap-5 md:grid-cols-2">
+                    <section
+                        aria-label="Reading plans"
+                        className="grid items-start gap-5 lg:grid-cols-2"
+                    >
                         {plans.map((plan) => {
-                            const details = planDetails[plan.slug] ?? {
-                                content: 'A guided journey through Scripture',
-                                idealFor: 'Building a daily habit',
-                                description: 'A day-by-day reading journey through the Bible.',
-                                accent: 'from-emerald-700 to-green-600',
-                            };
-                            const progressPercent = plan.currentDay
-                                ? Math.min(Math.round(((plan.currentDay - 1) / plan.durationDays) * 100), 100)
+                            const done = plan.currentDay
+                                ? Math.min(
+                                      plan.currentDay - 1,
+                                      plan.durationDays,
+                                  )
                                 : 0;
-
+                            const percent = Math.round(
+                                (done / plan.durationDays) * 100,
+                            );
+                            const active =
+                                plan.currentDay !== null && !plan.isComplete;
                             return (
-                                <Card key={plan.id} className="overflow-hidden border-border/70 shadow-sm">
-                                    <div className={`h-2 bg-gradient-to-r ${details.accent}`} />
-                                    <CardHeader className="gap-3 pb-3">
-                                        <div className="flex items-start justify-between gap-4">
-                                            <div className="space-y-2">
-                                                <CardTitle className="text-xl">{plan.name}</CardTitle>
-                                                <CardDescription>{details.description}</CardDescription>
-                                            </div>
-                                            <span className="shrink-0 rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
-                                                {plan.durationDays} days
+                                <article
+                                    key={plan.id}
+                                    className="bg-card space-y-5 rounded-xl border p-5 shadow-sm sm:p-6"
+                                >
+                                    <div>
+                                        <div className="flex flex-wrap items-start justify-between gap-3">
+                                            <h2 className="max-w-full min-w-0 text-xl font-semibold break-words">
+                                                {plan.name}
+                                            </h2>
+                                            <span className="bg-primary/10 text-primary rounded-full px-3 py-1 text-xs font-medium">
+                                                {plan.isComplete
+                                                    ? 'Completed'
+                                                    : plan.isPaused
+                                                      ? 'Paused'
+                                                      : plan.isCustom
+                                                        ? 'Your private plan'
+                                                        : 'Guided plan'}
                                             </span>
                                         </div>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="grid gap-3 sm:grid-cols-2">
-                                            <div className="rounded-lg bg-muted/60 p-3">
-                                                <p className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground"><BookOpen className="size-3.5" /> Reading</p>
-                                                <p className="text-sm font-semibold">{details.content}</p>
+                                        <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+                                            {plan.description ||
+                                                descriptions[plan.slug] ||
+                                                'A guided journey through Scripture.'}
+                                        </p>
+                                        <p className="text-muted-foreground mt-3 text-xs">
+                                            {plan.durationDays} readings ·{' '}
+                                            {plan.readingDays.length === 7
+                                                ? 'Daily'
+                                                : plan.readingDays
+                                                      .map((day) =>
+                                                          readingDayNames[
+                                                              day
+                                                          ].slice(0, 3),
+                                                      )
+                                                      .join(', ')}
+                                        </p>
+                                    </div>
+                                    {plan.currentDay !== null && (
+                                        <div className="space-y-2">
+                                            <div className="flex flex-wrap justify-between gap-2 text-sm">
+                                                <span>
+                                                    {done} of{' '}
+                                                    {plan.durationDays} readings
+                                                    completed
+                                                </span>
+                                                <span className="text-muted-foreground">
+                                                    {percent}%
+                                                </span>
                                             </div>
-                                            <div className="rounded-lg bg-muted/60 p-3">
-                                                <p className="mb-1 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground"><Sparkles className="size-3.5" /> Ideal for</p>
-                                                <p className="text-sm font-semibold">{details.idealFor}</p>
-                                            </div>
+                                            <progress
+                                                value={done}
+                                                max={plan.durationDays}
+                                                aria-label={`${plan.name} completed readings`}
+                                                className="[&::-moz-progress-bar]:bg-primary [&::-webkit-progress-bar]:bg-muted [&::-webkit-progress-value]:bg-primary h-2 w-full overflow-hidden rounded-full"
+                                            />
                                         </div>
-                                        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
-                                            <span className="inline-flex items-center gap-2"><CalendarDays className="size-4" /> {plan.durationDays} day plan</span>
-                                            <span className="inline-flex items-center gap-2"><Clock3 className="size-4" /> {plan.durationDays} daily readings</span>
-                                        </div>
-                                        {plan.currentDay && !plan.isComplete && (
-                                            <div className="rounded-lg border border-primary/15 bg-primary/[0.04] p-4">
-                                                <p className="mb-2 text-sm font-semibold">Today’s reading</p>
-                                                <ul className="space-y-2 text-sm">
-                                                    {plan.todayReadings.map((reading) => (
-                                                        <li key={`${reading.book}-${reading.chapter}`}>
-                                                            <Link href={reading.url} className="inline-flex items-center gap-2 font-medium text-primary underline-offset-4 hover:underline">
-                                                                {reading.isRead ? <Check className="size-4" /> : <BookOpen className="size-4" />}
-                                                                {reading.reference}
-                                                            </Link>
-                                                            <span className="ml-2 text-muted-foreground">{reading.isRead ? 'Read today' : 'Open passage'}</span>
-                                                        </li>
-                                                    ))}
+                                    )}
+                                    {plan.isComplete && (
+                                        <p
+                                            role="status"
+                                            className="bg-primary/10 text-primary rounded-lg p-4 text-sm font-medium"
+                                        >
+                                            Congratulations! You finished this
+                                            journey. Your completed readings are
+                                            saved.
+                                        </p>
+                                    )}
+                                    {active && (
+                                        <>
+                                            <div className="bg-muted/50 space-y-3 rounded-lg p-4">
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                    <h3 className="font-medium">
+                                                        Reading{' '}
+                                                        {plan.currentDay}: next
+                                                        passages
+                                                    </h3>
+                                                    <span className="text-muted-foreground text-xs">
+                                                        {plan.isPaused
+                                                            ? 'Schedule on hold'
+                                                            : plan.nextReadOn
+                                                              ? `Suggested ${plan.nextReadOn}`
+                                                              : 'At your pace'}
+                                                    </span>
+                                                </div>
+                                                {plan.isOverdue && (
+                                                    <p className="text-muted-foreground text-xs">
+                                                        Ready to catch up?
+                                                        Already logged passages
+                                                        can be credited below,
+                                                        or adjust the remaining
+                                                        schedule.
+                                                    </p>
+                                                )}
+                                                <ul className="space-y-2">
+                                                    {plan.todayReadings.map(
+                                                        (reading) => (
+                                                            <li
+                                                                key={
+                                                                    reading.reference
+                                                                }
+                                                                className="flex flex-wrap items-center gap-2 text-sm"
+                                                            >
+                                                                <Link
+                                                                    href={
+                                                                        reading.url
+                                                                    }
+                                                                    className="text-primary inline-flex items-center gap-2 font-medium hover:underline"
+                                                                >
+                                                                    {reading.isRead ? (
+                                                                        <Check
+                                                                            className="size-4"
+                                                                            aria-hidden="true"
+                                                                        />
+                                                                    ) : (
+                                                                        <BookOpen
+                                                                            className="size-4"
+                                                                            aria-hidden="true"
+                                                                        />
+                                                                    )}
+                                                                    {
+                                                                        reading.reference
+                                                                    }
+                                                                </Link>
+                                                                {reading.isRead && (
+                                                                    <span className="text-muted-foreground text-xs">
+                                                                        Logged
+                                                                    </span>
+                                                                )}
+                                                            </li>
+                                                        ),
+                                                    )}
                                                 </ul>
                                             </div>
-                                        )}
-                                        {plan.isComplete && (
-                                            <p className="rounded-lg bg-primary/10 p-3 text-sm font-semibold text-primary">
-                                                Congratulations — you completed this plan!
-                                            </p>
-                                        )}
-                                        {plan.currentDay && (
-                                            <div className="space-y-2">
-                                                <div className="flex justify-between text-sm">
-                                                    <span className="font-medium">Day {Math.min(plan.currentDay, plan.durationDays)} of {plan.durationDays}</span>
-                                                    <span className="text-muted-foreground">{progressPercent}%</span>
-                                                </div>
-                                                <div className="h-2 overflow-hidden rounded-full bg-muted">
-                                                    <div className={`h-full rounded-full bg-gradient-to-r ${details.accent}`} style={{ width: `${progressPercent}%` }} />
-                                                </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {plan.isPaused ? (
+                                                    <Button
+                                                        disabled={
+                                                            pending !== null
+                                                        }
+                                                        onClick={() =>
+                                                            action(
+                                                                plan,
+                                                                'resume',
+                                                                'Plan resumed. Your completed readings are kept.',
+                                                            )
+                                                        }
+                                                    >
+                                                        <Play aria-hidden="true" />
+                                                        Resume plan
+                                                    </Button>
+                                                ) : (
+                                                    <>
+                                                        <Button
+                                                            disabled={
+                                                                pending !==
+                                                                    null ||
+                                                                !plan.isTodayComplete
+                                                            }
+                                                            onClick={() =>
+                                                                action(
+                                                                    plan,
+                                                                    'complete-day',
+                                                                    'Reading progress updated.',
+                                                                )
+                                                            }
+                                                        >
+                                                            <Check aria-hidden="true" />
+                                                            {pending ===
+                                                            `plan-${plan.id}`
+                                                                ? 'Updating...'
+                                                                : 'Complete reading'}
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            disabled={
+                                                                pending !== null
+                                                            }
+                                                            onClick={() =>
+                                                                action(
+                                                                    plan,
+                                                                    'pause',
+                                                                    'Plan paused. Your reading position is saved.',
+                                                                )
+                                                            }
+                                                        >
+                                                            <Pause aria-hidden="true" />
+                                                            Pause
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-auto min-h-9 whitespace-normal"
+                                                            disabled={
+                                                                pending !==
+                                                                    null ||
+                                                                !plan.isTodayComplete
+                                                            }
+                                                            onClick={() =>
+                                                                action(
+                                                                    plan,
+                                                                    'catch-up',
+                                                                    'Logged readings credited. Catch-up stops at the first unfinished reading.',
+                                                                )
+                                                            }
+                                                        >
+                                                            <RotateCw aria-hidden="true" />
+                                                            Catch up logged
+                                                            readings
+                                                        </Button>
+                                                    </>
+                                                )}
                                             </div>
-                                        )}
-                                    </CardContent>
-                                    <CardFooter>
+                                            {!plan.isTodayComplete &&
+                                                !plan.isPaused && (
+                                                    <p className="text-muted-foreground text-xs">
+                                                        Log all next passages to
+                                                        complete this reading.
+                                                        Catch-up credits
+                                                        consecutive readings
+                                                        already in your journal.
+                                                    </p>
+                                                )}
+                                            <ScheduleEditor
+                                                key={`${plan.id}:${plan.nextReadOn}:${plan.readingDays.join(',')}`}
+                                                plan={plan}
+                                                today={today}
+                                                disabled={pending !== null}
+                                                save={(days, date) =>
+                                                    submit(
+                                                        `plan-${plan.id}`,
+                                                        'patch',
+                                                        `/reading-plans/${plan.id}/schedule`,
+                                                        {
+                                                            reading_days: days,
+                                                            next_read_on: date,
+                                                        },
+                                                        'Remaining schedule updated. Completed readings are kept.',
+                                                    )
+                                                }
+                                            />
+                                        </>
+                                    )}
+                                    {plan.currentDay === null && (
                                         <Button
                                             className="w-full"
-                                            disabled={processingPlanId === plan.id || plan.isComplete || (!!plan.currentDay && !plan.isTodayComplete)}
-                                            variant={plan.currentDay ? 'secondary' : 'default'}
-                                            onClick={() => submitPlanAction(plan)}
+                                            disabled={pending !== null}
+                                            onClick={() =>
+                                                action(
+                                                    plan,
+                                                    'start',
+                                                    'Reading plan started.',
+                                                )
+                                            }
                                         >
-                                            {plan.currentDay ? <Check /> : <BookOpenCheck />}
-                                            {processingPlanId === plan.id
-                                                ? 'Saving…'
-                                                : plan.isComplete
-                                                  ? 'Plan completed'
-                                                  : plan.currentDay
-                                                                                                        ? plan.isTodayComplete ? 'Complete today & continue' : 'Read today’s passages first'
-                                                    : 'Start this plan'}
+                                            <BookOpen aria-hidden="true" />
+                                            {pending === `plan-${plan.id}`
+                                                ? 'Starting...'
+                                                : 'Start this plan'}
                                         </Button>
-                                    </CardFooter>
-                                </Card>
+                                    )}
+                                </article>
                             );
                         })}
                     </section>
                 ) : (
-                    <Card>
-                        <CardContent className="py-16 text-center text-muted-foreground">
-                            Reading plans are being prepared. Please check back soon.
-                        </CardContent>
-                    </Card>
+                    <section className="bg-card rounded-xl border p-8 text-center">
+                        <h2 className="font-semibold">
+                            Create your own reading journey
+                        </h2>
+                        <p className="text-muted-foreground mt-2 text-sm">
+                            Your personal plan can cover any consecutive range
+                            of Bible books.
+                        </p>
+                        <Button asChild className="mt-4">
+                            <Link href="/reading-plans/create">
+                                Create a plan
+                            </Link>
+                        </Button>
+                    </section>
                 )}
             </main>
         </>
     );
 }
-
 ReadingPlansIndex.layout = {
-    breadcrumbs: [
-        { title: 'Dashboard', href: dashboard() },
-        { title: 'Reading Plans', href: readingPlansIndex() },
-    ],
+    breadcrumbs: [{ title: 'Reading plans', href: '/reading-plans' }],
 };
