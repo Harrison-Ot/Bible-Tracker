@@ -3,6 +3,7 @@ import {
     ArrowLeft,
     ArrowRight,
     Check,
+    Bookmark,
     Maximize2,
     Minimize2,
     Pause,
@@ -22,6 +23,9 @@ import {
     type ReadingPreferences,
 } from '@/hooks/use-reading-preferences';
 import type { Auth } from '@/types';
+import { useSavedVerses } from '@/hooks/use-saved-verses';
+import { deviceHighlights, type SavedVerse } from '@/lib/saved-verses';
+import ActionFeedback from '@/components/action-feedback';
 
 interface Verse {
     book_id: string;
@@ -36,6 +40,7 @@ interface ReadProps {
     chapterCount: number;
     translation: string;
     passage: { verses: Verse[] };
+    savedVerses: SavedVerse[];
 }
 
 const readingWidths = {
@@ -52,6 +57,7 @@ export default function Read({
     chapterCount,
     translation,
     passage,
+    savedVerses,
 }: ReadProps) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const { preferences, updatePreferences, saved } = useReadingPreferences(
@@ -59,50 +65,32 @@ export default function Read({
     );
     const { focused, setFocused } = useReadingMode();
     const bookName = passage.verses[0]?.book_name ?? bookId;
-    const storageKey = `highlights:${bookId}:${chapter}`;
     const { post, transform, processing, recentlySuccessful, errors } = useForm(
         { book: bookName, chapter, translation },
     );
-    const [highlighted, setHighlighted] = useState<Set<number>>(new Set());
-
+    const {
+        highlighted,
+        bookmarked,
+        pending: savedPending,
+        feedback: savedFeedback,
+        save,
+        clearHighlights,
+    } = useSavedVerses(savedVerses, bookId, chapter, translation);
+    const [legacyVerses, setLegacyVerses] = useState<number[]>([]);
     useEffect(() => {
-        try {
-            const value: unknown = JSON.parse(
-                localStorage.getItem(storageKey) ?? '[]',
-            );
-            setHighlighted(
-                new Set(
-                    Array.isArray(value)
-                        ? value.filter(
-                              (verse) =>
-                                  Number.isInteger(verse) &&
-                                  passage.verses.some(
-                                      (item) => item.verse === verse,
-                                  ),
-                          )
-                        : [],
-                ),
-            );
-        } catch {
-            setHighlighted(new Set());
-        }
-    }, [storageKey, passage.verses]);
-
-    const saveHighlights = (next: Set<number>) => {
-        setHighlighted(next);
-        try {
-            localStorage.setItem(storageKey, JSON.stringify([...next]));
-        } catch {
-            /* Highlighting remains available for this session. */
-        }
-    };
-    const toggleHighlight = (verse: number) => {
-        const next = new Set(highlighted);
-        if (next.has(verse)) next.delete(verse);
-        else next.add(verse);
-        saveHighlights(next);
-    };
-
+        setLegacyVerses(
+            deviceHighlights().find(
+                (entry) => entry.bookId === bookId && entry.chapter === chapter,
+            )?.verses ?? [],
+        );
+    }, [bookId, chapter]);
+    const legacyCount = legacyVerses.filter(
+        (verse) =>
+            !highlighted.has(verse) &&
+            passage.verses.some((item) => item.verse === verse),
+    ).length;
+    const toggleHighlight = (verse: number) =>
+        save(verse, { highlighted: !highlighted.has(verse) });
     useEffect(() => () => setFocused(false), [setFocused]);
     useEffect(() => {
         if (!focused) return;
@@ -273,7 +261,7 @@ export default function Read({
                         </div>
                         <p className="text-muted-foreground text-sm">
                             {passage.verses.length} verses · Select a verse to
-                            highlight it.
+                            highlight it, or use its bookmark button.
                             {focused
                                 ? ' Press Escape to leave focus mode.'
                                 : ''}
@@ -288,6 +276,23 @@ export default function Read({
                         )}
                     </header>
 
+                    <ActionFeedback feedback={savedFeedback} />
+                    {legacyCount > 0 && (
+                        <div className="border-primary/20 bg-primary/5 flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
+                            <p className="text-muted-foreground text-sm">
+                                {legacyCount} device{' '}
+                                {legacyCount === 1
+                                    ? 'highlight is'
+                                    : 'highlights are'}{' '}
+                                ready to import into your account.
+                            </p>
+                            <Button asChild variant="outline" size="sm">
+                                <Link href="/saved-verses">
+                                    Import device highlights
+                                </Link>
+                            </Button>
+                        </div>
+                    )}
                     <details className="bg-card rounded-xl border p-4 shadow-sm">
                         <summary className="focus-visible:ring-ring flex cursor-pointer list-none items-center gap-2 rounded-sm text-sm font-medium focus-visible:ring-2 focus-visible:outline-none">
                             <SlidersHorizontal
@@ -394,36 +399,75 @@ export default function Read({
                     {passage.verses.length ? (
                         <section
                             aria-label={`${bookName} ${chapter} passage`}
-                            className="bg-card text-card-foreground space-y-1 rounded-xl border p-3 shadow-sm sm:p-6"
+                            aria-busy={savedPending}
+                            className="bg-card text-card-foreground space-y-2 rounded-xl border p-3 shadow-sm sm:p-6"
                             style={{
                                 fontSize: preferences.fontSize,
                                 lineHeight: preferences.lineSpacing,
                             }}
                         >
                             {passage.verses.map((verse) => (
-                                <p
+                                <div
                                     key={verse.verse}
-                                    role="button"
-                                    tabIndex={0}
-                                    aria-pressed={highlighted.has(verse.verse)}
-                                    aria-label={`Verse ${verse.verse}: ${verse.text}`}
-                                    onClick={() => toggleHighlight(verse.verse)}
-                                    onKeyDown={(event) => {
-                                        if (
-                                            event.key === 'Enter' ||
-                                            event.key === ' '
-                                        ) {
-                                            event.preventDefault();
-                                            toggleHighlight(verse.verse);
-                                        }
-                                    }}
-                                    className={`focus-visible:ring-ring cursor-pointer rounded-md px-2 py-1 transition-colors focus-visible:ring-2 focus-visible:outline-none ${highlighted.has(verse.verse) ? 'bg-amber-100 text-amber-950 dark:bg-amber-900/50 dark:text-amber-100' : 'hover:bg-accent'} ${activeVerse === verse.verse ? 'ring-primary/50 ring-2' : ''}`}
+                                    className="flex items-start gap-1"
                                 >
-                                    <sup className="text-muted-foreground mr-2 text-xs font-semibold">
-                                        {verse.verse}
-                                    </sup>
-                                    {verse.text}
-                                </p>
+                                    <p
+                                        id={`verse-${verse.verse}`}
+                                        role="button"
+                                        tabIndex={0}
+                                        aria-disabled={savedPending}
+                                        aria-pressed={highlighted.has(
+                                            verse.verse,
+                                        )}
+                                        aria-label={`Highlight verse ${verse.verse}: ${verse.text}`}
+                                        onClick={() =>
+                                            toggleHighlight(verse.verse)
+                                        }
+                                        onKeyDown={(event) => {
+                                            if (
+                                                event.key === 'Enter' ||
+                                                event.key === ' '
+                                            ) {
+                                                event.preventDefault();
+                                                void toggleHighlight(
+                                                    verse.verse,
+                                                );
+                                            }
+                                        }}
+                                        className={`focus-visible:ring-ring min-w-0 flex-1 cursor-pointer rounded-md px-2 py-1 transition-colors focus-visible:ring-2 focus-visible:outline-none ${highlighted.has(verse.verse) ? 'bg-amber-100 text-amber-950 dark:bg-amber-900/50 dark:text-amber-100' : 'hover:bg-accent'} ${activeVerse === verse.verse ? 'ring-primary/50 ring-2' : ''}`}
+                                    >
+                                        <sup className="text-muted-foreground mr-2 text-xs font-semibold">
+                                            {verse.verse}
+                                        </sup>
+                                        {verse.text}
+                                    </p>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        disabled={savedPending}
+                                        aria-pressed={bookmarked.has(
+                                            verse.verse,
+                                        )}
+                                        aria-label={`${bookmarked.has(verse.verse) ? 'Remove bookmark for' : 'Bookmark'} ${bookName} ${chapter}:${verse.verse}`}
+                                        onClick={() =>
+                                            save(verse.verse, {
+                                                bookmarked: !bookmarked.has(
+                                                    verse.verse,
+                                                ),
+                                            })
+                                        }
+                                        className="text-primary mt-1 shrink-0"
+                                    >
+                                        <Bookmark
+                                            className={
+                                                bookmarked.has(verse.verse)
+                                                    ? 'fill-current'
+                                                    : ''
+                                            }
+                                            aria-hidden="true"
+                                        />
+                                    </Button>
+                                </div>
                             ))}
                         </section>
                     ) : (
@@ -444,23 +488,31 @@ export default function Read({
                             </Button>
                         </section>
                     )}
-
                     {highlighted.size > 0 && (
                         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-300/50 bg-amber-100/60 px-4 py-3 text-sm text-amber-950 dark:bg-amber-900/30 dark:text-amber-100">
                             <span>
                                 {highlighted.size}{' '}
                                 {highlighted.size === 1 ? 'verse' : 'verses'}{' '}
-                                highlighted
+                                highlighted · Saved to your account
                             </span>
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => saveHighlights(new Set())}
+                                disabled={savedPending}
+                                onClick={clearHighlights}
                             >
                                 Clear highlights
                             </Button>
                         </div>
                     )}
+                    <div className="flex justify-end">
+                        <Button asChild variant="ghost" size="sm">
+                            <Link href="/saved-verses">
+                                <Bookmark aria-hidden="true" />
+                                View saved verses
+                            </Link>
+                        </Button>
+                    </div>
                     <nav
                         aria-label="Chapter navigation"
                         className="flex flex-wrap justify-between gap-3 pb-4"
