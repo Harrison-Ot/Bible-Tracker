@@ -1,4 +1,4 @@
-import { Form } from '@inertiajs/react';
+import { Form, Link } from '@inertiajs/react';
 import { useRef } from 'react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import Heading from '@/components/heading';
@@ -16,7 +16,11 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 
-export default function DeleteUser() {
+export default function DeleteUser({
+    ownedGroupCount = 0,
+}: {
+    ownedGroupCount?: number;
+}) {
     const passwordInput = useRef<HTMLInputElement>(null);
 
     return (
@@ -34,10 +38,21 @@ export default function DeleteUser() {
                     </p>
                 </div>
 
+                {ownedGroupCount > 0 && (
+                    <p className="text-sm">
+                        You own {ownedGroupCount} reading{' '}
+                        {ownedGroupCount === 1 ? 'group' : 'groups'}. Transfer
+                        ownership or delete them before deleting your account.{' '}
+                        <Link href="/groups" className="text-primary underline">
+                            Manage groups
+                        </Link>
+                    </p>
+                )}
                 <Dialog>
                     <DialogTrigger asChild>
                         <Button
                             variant="destructive"
+                            disabled={ownedGroupCount > 0}
                             data-test="delete-user-button"
                         >
                             Delete account
