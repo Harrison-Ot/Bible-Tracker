@@ -1,4 +1,4 @@
-import { Form } from '@inertiajs/react';
+import { Form, Link } from '@inertiajs/react';
 import { useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 
@@ -96,17 +96,7 @@ export function GroupPagination({
     page: { prev_page_url: string | null; next_page_url: string | null };
     label: string;
 }) {
-    // Imported separately to keep all navigation as Inertia visits.
-    return <PaginationLinks page={page} label={label} />;
-}
-import { Link } from '@inertiajs/react';
-function PaginationLinks({
-    page,
-    label,
-}: {
-    page: { prev_page_url: string | null; next_page_url: string | null };
-    label: string;
-}) {
+
     if (!page.prev_page_url && !page.next_page_url) return null;
     return (
         <nav
