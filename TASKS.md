@@ -2,7 +2,7 @@
 
 Updated: 2026-11-14
 
-Status: [ ] planned, [x] complete. Phases 1 and 2 are implemented and verified with automated checks and synthetic browser data. The Phase 3 reminder batch is also implemented. Physical-device/live-data review and the remaining phases are planned.
+Status: [ ] planned, [x] complete. Phases 1 and 2 are implemented and verified with automated checks and synthetic browser data. Phases 3 and 4 are also implemented. Physical-device/live-data review and the remaining phases are planned.
 
 ## Phase 1 - Daily reading experience (complete)
 - [x] Redesign the dashboard around Continue Reading, compact statistics, and today's plans.
@@ -28,19 +28,19 @@ Status: [ ] planned, [x] complete. Phases 1 and 2 are implemented and verified w
 - [x] Prevent duplicate community submissions and recover buttons after validation, HTTP and network failures.
 - [ ] Perform physical-device and live-data smoke review, including browser audio, email delivery and mobile keyboard/safe-area behavior.
 
-## Phase 3 - Reminders and saved verses
+## Phase 3 - Reminders and saved verses (features complete; deployment verification pending)
 - [x] Store reminder time, timezone, reading days and opt-in preferences, with verified-account settings and validation.
 - [x] Schedule email reminders with per-local-date duplicate prevention, dry-run support, and signed unsubscribe confirmation.
 - [ ] Configure and verify the deployment scheduler and mail transport with a controlled live-delivery check.
-- [ ] Sync highlights and bookmarks to each user's account.
-- [ ] Import existing device highlights without duplicates.
-- [ ] Add a searchable saved-verses library.
+- [x] Sync highlights and bookmarks to each user's account, separately per translation.
+- [x] Import existing device highlights explicitly by chapter and chosen translation, without duplicates or deleting originals.
+- [x] Add a private saved-verses library with passage/text search, book/type/translation filters, pagination and removal.
 
-## Phase 4 - Flexible plans and reports
-- [ ] Add custom reading goals and schedules.
-- [ ] Add plan pause/resume and catch-up options that preserve completed readings.
-- [ ] Add progress reports for unique chapters, books and weekly activity.
-- [ ] Add useful completion feedback and milestones.
+## Phase 4 - Flexible plans and reports (complete)
+- [x] Add private book-range plans, chapters-per-reading pace, selected weekdays, start dates and a personal weekly chapter goal.
+- [x] Add pause/resume, remaining-schedule edits and journal-based catch-up that preserve completed readings.
+- [x] Add private progress reports for unique chapters, all 66 books and the last eight weeks of activity.
+- [x] Add completion feedback, weekly-goal progress and chapter/book/plan milestones.
 
 ## Phase 5 - Group reading
 - [ ] Implement group creation, invitations, membership and roles.
@@ -76,7 +76,7 @@ Status: [ ] planned, [x] complete. Phases 1 and 2 are implemented and verified w
 - Journal search combines keyword, book and inclusive date filters. Pagination keeps the query. Reflection editing changes only the owner's note, with a 1,000-character limit.
 - Unfinished Reports and Groups navigation links are removed until those features are implemented.
 
-- Reader preferences save on the current device under an account-specific key. Highlights keep their existing storage format for the later synchronization/import work.
+- Reader appearance preferences save on the current device under an account-specific key. New highlights and bookmarks are saved to the account; older device highlight keys are retained for explicit import.
 - Focus mode hides the sidebar, page header, mobile navigation and install prompt. An exit control stays available in the reading action bar.
 
 ## Community, authentication and settings review
@@ -101,3 +101,31 @@ Status: [ ] planned, [x] complete. Phases 1 and 2 are implemented and verified w
 - Applied migration `2026_11_14_000002_create_reading_reminders_tables` to the configured database.
 - `php artisan readings:send-reminders --dry-run`: 0 due; no mail sent. `php artisan schedule:list` confirms the once-per-minute command.
 - No real reminder emails were sent and no host-level scheduler was installed or started. The deployment needs a working mail transport and its usual Laravel scheduler runner.
+## Saved verses implementation and verification
+- `/saved-verses` is available from the sidebar and reader. Highlights and bookmarks are private to the account and translation; opening or refreshing a chapter loads its saved state across devices.
+- Reader verse selection updates account highlights. Per-verse bookmark buttons work independently. Clearing chapter highlights preserves bookmarks, other chapters, other translations and other accounts.
+- New saved text comes from the server's cached Bible provider response. Client-supplied text, book names and user IDs are not used. Removing existing flags and clearing highlights do not require a provider request.
+- Unique account/book/chapter/verse/translation records prevent duplicate saves. Empty records are removed when both flags are off. Account deletion cascades to saved verses.
+- Device import is an explicit action. Legacy highlights do not identify an account or translation, so users choose the translation. Original keys remain untouched; malformed values are ignored, complete chapters are validated before writes, and successful chapter imports remain saved if another chapter fails. Repeating imports does not duplicate records or clear bookmarks.
+- Import requests are paced and guarded against duplicate clicks. Saves report network/session failures without claiming successful synchronization. No offline save queue or real-time cross-device push is implemented.
+- Library search supports verse text and exact references such as John 3:16. Filters and pagination are account-scoped; passage links include the verse anchor.
+- `php artisan test --compact`: 124 passed, 4 skipped; 804 assertions across 128 tests. All 15 new saved-verse tests passed.
+- PHP static analysis passed with zero errors. TypeScript, changed frontend lint, production build and whitespace checks passed.
+- Headless Chrome with synthetic API responses: saved highlight/bookmark reloads, translation separation, clear preserving bookmarks, explicit/repeated imports, duplicate click prevention, original storage retention, library search/removal, keyboard use, network/session failures and account saves with device storage blocked.
+- Browser review covered reader/library at 320/390/1440px in light/dark modes. Screenshots and report: `storage/app/private/saved-verse-review/`; local runner: `storage/app/private/ui-review/saved-verse-review.mjs` (ignored by Git).
+- Applied migration `2026_11_14_000003_create_saved_verses_table` to the configured database. All provider calls in automated tests were faked; no live user saves or messages were generated for verification.
+## Phase 4 implementation and verification
+- `/reading-plans/create` builds a private plan over a consecutive Bible-book range, with 1-20 chapters per reading, selected weekdays and a schedule date. Creation tokens make retries idempotent without resetting an existing run.
+- Public curated plans remain available. Private plans are visible/actionable only to their owner. Pause/resume and schedule edits act on the current user's progress, with row locks and no reset of completed readings.
+- Weekday schedules guide the next suggested reading date; reading ahead is allowed. Resuming keeps an existing future date or moves an overdue reading to the next selected day. Saving a remaining schedule uses a selected weekday on/after the chosen date and preserves pause state.
+- Completing a reading uses matching journal chapters logged from the plan's original start date through today, across translations and canonical book names/IDs. Catch-up advances consecutive fully logged readings and stops at the first gap. It does not create journal entries or alter streak data.
+- UI completion/catch-up requests include the expected reading number. Stale retries do not advance again. New completion events are recorded once per progress/reading; completed plans stay completed, including after journal deletions.
+- Existing reading positions and original start dates are preserved. Migration sets their new schedule clock to its application date and defaults weekdays to daily. Historical completion dates are not invented; existing completed plans still count from their saved reading position.
+- `/reports` shows lifetime unique valid chapters, all 66 book totals, reading days/log totals, completed plans, eight Monday-Sunday weeks and a weekly goal (default 7; range 1-1189). Rereads and translations do not inflate unique progress; future, unknown-book and out-of-range entries are excluded.
+- Weekly activity counts distinct chapters within each week; the same chapter can contribute again in a different week. Bars compare with the current goal. Chapter/book milestones are derived from current journal data and update if those entries are removed; plan milestones use saved completion progress.
+- Dashboard hides paused plans and links to reports. Plan/report screens provide empty, progress, error and completion feedback using the shared request handler.
+- `php artisan test --compact`: 140 passed, 4 skipped; 994 assertions across 144 tests. All 16 Phase 4 tests passed, with existing plan and dashboard tests preserved.
+- PHP static analysis passed with zero errors. TypeScript, changed frontend lint, production build and whitespace checks passed.
+- Headless Chrome with synthetic data: plans/creator/reports at 320/390/1440px in light/dark; unique IDs, pause/resume, complete/catch-up, schedule preservation, custom range/pace/day creation, weekly-goal save/reload and network/HTTP failure recovery.
+- Browser screenshots/report: `storage/app/private/phase-four-review/`; local runner: `storage/app/private/ui-review/phase-four-review.mjs` (ignored by Git).
+- Applied migration `2026_11_14_000004_add_flexible_plans_and_reading_goals` to the configured database. No real user plans or journal entries were created by browser verification.
