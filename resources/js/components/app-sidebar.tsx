@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import {
     Bell,
+    Download,
     ChartNoAxesCombined,
     Bookmark,
     BookOpenCheck,
@@ -40,6 +41,11 @@ const mainNavItems: NavItem[] = [
         title: 'Bible',
         href: '/bible',
         icon: NotebookText,
+    },
+    {
+        title: 'Downloads',
+        href: '/downloads',
+        icon: Download,
     },
     {
         title: 'Saved verses',
