@@ -70,6 +70,7 @@ class BibleController extends Controller
             'chapter' => $chapter,
             'translation' => $translation,
             'passage' => $passage,
+            'savedVerses' => $request->user()->savedVerses()->where('book_id', $bookId)->where('chapter', $chapter)->where('translation', $translation)->get()->map(fn ($verse): array => $verse->forClient()),
         ]);
     }
 }
