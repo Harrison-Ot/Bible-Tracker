@@ -26,6 +26,8 @@ import type { Auth } from '@/types';
 import { useSavedVerses } from '@/hooks/use-saved-verses';
 import { deviceHighlights, type SavedVerse } from '@/lib/saved-verses';
 import ActionFeedback from '@/components/action-feedback';
+import DownloadChapter from '@/components/download-chapter';
+import { localToday, loggingOwner, queueReading } from '@/lib/offline-db';
 
 interface Verse {
     book_id: string;
@@ -41,6 +43,7 @@ interface ReadProps {
     translation: string;
     passage: { verses: Verse[] };
     savedVerses: SavedVerse[];
+    today?: string;
 }
 
 const readingWidths = {
@@ -58,6 +61,7 @@ export default function Read({
     translation,
     passage,
     savedVerses,
+    today,
 }: ReadProps) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const { preferences, updatePreferences, saved } = useReadingPreferences(
@@ -166,9 +170,72 @@ export default function Read({
         return () => window.speechSynthesis?.cancel();
     }, [bookId, chapter, translation]);
 
+    const [offlineBusy, setOfflineBusy] = useState(false);
+    const [offlineFeedback, setOfflineFeedback] = useState<{
+        error: boolean;
+        message: string;
+    } | null>(null);
+    const offlineLock = useRef(false);
+    const queueCurrent = async (date: string) => {
+        if (offlineLock.current) return;
+        offlineLock.current = true;
+        setOfflineBusy(true);
+        setOfflineFeedback(null);
+        try {
+            if (translation !== 'web')
+                throw new Error(
+                    'Offline reading logs support WEB. Reconnect to save this translation.',
+                );
+            if ((await loggingOwner()) !== auth.user.id)
+                throw new Error(
+                    'Enable offline reading logs on the Downloads page while signed in before going offline.',
+                );
+            await queueReading(auth.user.id, { bookId, chapter }, date);
+            setOfflineFeedback({
+                error: false,
+                message: `Reading queued for ${date} on this device. Your journal and streak update after sync is confirmed.`,
+            });
+        } catch (failure) {
+            setOfflineFeedback({
+                error: true,
+                message:
+                    failure instanceof Error
+                        ? failure.message
+                        : 'Could not queue this reading. It has not been saved.',
+            });
+        } finally {
+            offlineLock.current = false;
+            setOfflineBusy(false);
+        }
+    };
     const markAsRead = () => {
-        transform(() => ({ book: bookName, chapter, translation }));
-        post(store.url(), { preserveScroll: true });
+        const date = navigator.onLine ? (today ?? localToday()) : localToday();
+        if (!navigator.onLine) {
+            void queueCurrent(date);
+            return;
+        }
+        setOfflineFeedback(null);
+        transform(() => ({
+            book: bookName,
+            chapter,
+            translation,
+            read_on: date,
+        }));
+        post(store.url(), {
+            preserveScroll: true,
+            onNetworkError: () => {
+                void queueCurrent(date);
+                return false;
+            },
+            onHttpException: () => {
+                setOfflineFeedback({
+                    error: true,
+                    message:
+                        'Could not save this reading. Refresh your session and try again.',
+                });
+                return false;
+            },
+        });
     };
     const passageUrl = (number: number) =>
         `/bible/${bookId}/${number}?translation=${encodeURIComponent(translation)}`;
@@ -275,6 +342,11 @@ export default function Read({
                             </p>
                         )}
                     </header>
+                    <DownloadChapter
+                        bookId={bookId}
+                        chapter={chapter}
+                        translation={translation}
+                    />
 
                     <ActionFeedback feedback={savedFeedback} />
                     {legacyCount > 0 && (
@@ -564,16 +636,28 @@ export default function Read({
                         )}
                         <Button
                             onClick={markAsRead}
-                            disabled={processing || !passage.verses.length}
+                            disabled={
+                                processing ||
+                                offlineBusy ||
+                                !passage.verses.length
+                            }
                         >
                             {recentlySuccessful && <Check aria-hidden="true" />}
-                            {processing
+                            {processing || offlineBusy
                                 ? 'Saving...'
                                 : recentlySuccessful
                                   ? 'Marked as read'
                                   : 'Mark as read'}
                         </Button>
                     </div>
+                    {offlineFeedback && (
+                        <p
+                            role={offlineFeedback.error ? 'alert' : 'status'}
+                            className={`mx-auto mt-2 max-w-prose text-sm ${offlineFeedback.error ? 'text-destructive' : 'text-primary'}`}
+                        >
+                            {offlineFeedback.message}
+                        </p>
+                    )}
                     {Object.values(errors).length > 0 && (
                         <p
                             role="alert"

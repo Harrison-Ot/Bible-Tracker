@@ -142,7 +142,7 @@ export default function Groups({
                             {invitations.data.map((invite) => (
                                 <li
                                     key={invite.id}
-                                    className="flex flex-wrap items-center justify-between gap-4 py-4 first:pt-0"
+                                    className="flex flex-col items-stretch justify-between gap-4 py-4 first:pt-0 sm:flex-row sm:items-center"
                                 >
                                     <div className="min-w-0 flex-1 space-y-1 break-words">
                                         <h3 className="font-medium">
