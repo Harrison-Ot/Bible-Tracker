@@ -10,8 +10,14 @@ class ReadingPlan extends Model
     protected $fillable = [
         'name',
         'slug',
+        'description',
         'duration_days',
     ];
+
+    protected function casts(): array
+    {
+        return ['duration_days' => 'integer', 'user_id' => 'integer'];
+    }
 
     /** @return HasMany<PlanDay, $this> */
     public function days(): HasMany
