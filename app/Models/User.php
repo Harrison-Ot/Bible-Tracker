@@ -50,6 +50,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'last_reading' => 'array',
             'password' => 'hashed',
+            'weekly_chapter_goal' => 'integer',
         ];
     }
 
@@ -57,6 +58,12 @@ class User extends Authenticatable implements MustVerifyEmail
     public function readingReminder(): HasOne
     {
         return $this->hasOne(ReadingReminder::class);
+    }
+
+    /** @return HasMany<SavedVerse, $this> */
+    public function savedVerses(): HasMany
+    {
+        return $this->hasMany(SavedVerse::class);
     }
 
     /** @return HasMany<ReadingEntry, $this> */
@@ -68,7 +75,13 @@ class User extends Authenticatable implements MustVerifyEmail
     /** @return BelongsToMany<Group, $this> */
     public function groups(): BelongsToMany
     {
-        return $this->belongsToMany(Group::class);
+        return $this->belongsToMany(Group::class)->withPivot('role')->withTimestamps();
+    }
+
+    /** @return HasMany<Group, $this> */
+    public function ownedGroups(): HasMany
+    {
+        return $this->hasMany(Group::class, 'owner_id');
     }
 
     /** @return BelongsToMany<Badge, $this> */
@@ -88,6 +101,12 @@ class User extends Authenticatable implements MustVerifyEmail
     public function receivedConnectionRequests(): HasMany
     {
         return $this->hasMany(ConnectionRequest::class, 'recipient_id');
+    }
+
+    /** @return HasMany<ReadingPlan, $this> */
+    public function customReadingPlans(): HasMany
+    {
+        return $this->hasMany(ReadingPlan::class);
     }
 
     /** @return HasMany<UserPlanProgress, $this> */
