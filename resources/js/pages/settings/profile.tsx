@@ -16,9 +16,11 @@ type PageProps = {
 };
 
 export default function Profile({
+    ownedGroupCount = 0,
     mustVerifyEmail,
     status,
 }: {
+    ownedGroupCount?: number;
     mustVerifyEmail: boolean;
     status?: string;
 }) {
@@ -139,7 +141,7 @@ export default function Profile({
                 </Form>
             </div>
 
-            <DeleteUser />
+            <DeleteUser ownedGroupCount={ownedGroupCount} />
         </>
     );
 }
