@@ -11,6 +11,8 @@ use App\Http\Controllers\GroupPostController;
 use App\Http\Controllers\GroupReadingController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\OfflinePassageController;
+use App\Http\Controllers\OfflineReadingController;
 use App\Http\Controllers\ReadingEntryController;
 use App\Http\Controllers\ReadingJournalController;
 use App\Http\Controllers\ReadingPlanController;
@@ -20,8 +22,12 @@ use App\Http\Controllers\SavedVerseController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
+Route::view('/offline', 'offline')->name('offline');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/downloads', [OfflinePassageController::class, 'index'])->name('downloads.index');
+    Route::get('/offline-passages/{bookId}/{chapter}', [OfflinePassageController::class, 'show'])->middleware('throttle:10,1')->name('offline.passages');
+    Route::post('/offline-readings', [OfflineReadingController::class, 'store'])->middleware('throttle:60,1')->name('offline.readings');
     Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
     Route::post('/groups', [GroupController::class, 'store'])->middleware('throttle:10,1')->name('groups.store');
     Route::get('/groups/{group}', [GroupController::class, 'show'])->name('groups.show');

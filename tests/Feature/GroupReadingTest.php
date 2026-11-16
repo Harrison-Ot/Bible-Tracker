@@ -447,7 +447,9 @@ it('paginates discussions while keeping passage filters and private data out of 
     [$owner, $member] = User::factory()->count(2)->create()->all();
     $group = readingGroup($owner, [$member]);
     logGroupReading($owner, 1);
-    foreach (range(1, 21) as $number) $group->posts()->create(array_merge(groupPostPayload(['body' => 'Reflection '.$number]), ['user_id' => $owner->id]));
+    foreach (range(1, 21) as $number) {
+        $group->posts()->create(array_merge(groupPostPayload(['body' => 'Reflection '.$number]), ['user_id' => $owner->id]));
+    }
     $response = $this->actingAs($member)->get('/groups/'.$group->id.'?book=GEN&chapter=1');
     $response->assertInertia(fn ($page) => $page->has('posts.data', 20)->where('posts.total', 21)->where('posts.data.0.body', 'Reflection 21')->where('posts.next_page_url', fn ($url) => str_contains($url, 'book=GEN') && str_contains($url, 'chapter=1'))->missing('members.0.email')->missing('members.0.reading_entries'));
     $response->assertDontSee('Private journal reflection');
