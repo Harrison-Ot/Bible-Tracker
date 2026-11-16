@@ -31,7 +31,11 @@ export function GroupForm({
         <Form
             action={url}
             method={method}
-            options={{ preserveScroll: true, preserveState: true }}
+            errorBag={`${method}:${url}`}
+            options={{
+                preserveScroll: true,
+                preserveState: true,
+            }}
             resetOnSuccess={resetFields}
             onStart={() => {
                 setFailure('');
@@ -96,7 +100,6 @@ export function GroupPagination({
     page: { prev_page_url: string | null; next_page_url: string | null };
     label: string;
 }) {
-
     if (!page.prev_page_url && !page.next_page_url) return null;
     return (
         <nav
