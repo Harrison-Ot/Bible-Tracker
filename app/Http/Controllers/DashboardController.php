@@ -41,12 +41,13 @@ class DashboardController extends Controller
         }
 
         $activePlans = $user->readingPlanProgress()->with('plan')->get()
-            ->filter(fn ($progress) => $progress->plan && $progress->current_day <= $progress->plan->duration_days)
+            ->filter(fn ($progress) => $progress->plan && ! $progress->is_paused && $progress->current_day <= $progress->plan->duration_days && ($progress->plan->user_id === null || $progress->plan->user_id === $user->id))
             ->map(fn ($progress): array => [
                 'id' => $progress->reading_plan_id,
                 'name' => $progress->plan->name,
                 'currentDay' => $progress->current_day,
                 'durationDays' => $progress->plan->duration_days,
+                'nextReadOn' => $progress->next_read_on?->toDateString(),
             ])->values();
 
         return Inertia::render('dashboard', [
