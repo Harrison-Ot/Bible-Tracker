@@ -30,7 +30,7 @@ class GroupMembershipController extends Controller
                 throw ValidationException::withMessages(['recipient_id' => 'Choose a verified connection who is not already in this group.']);
             }
             $invite = $group->invitations()->firstOrCreate(['recipient_id' => $target->id], ['inviter_id' => $request->user()->id, 'expires_at' => now()->addDays(7)]);
-            if (! $invite->wasRecentlyCreated && ($invite->status !== 'pending' || $invite->expires_at->isPast())) {
+            if (! $invite->wasRecentlyCreated && ($invite->status !== 'pending' || $invite->expires_at->lessThanOrEqualTo(now()))) {
                 $invite->update(['status' => 'pending', 'inviter_id' => $request->user()->id, 'expires_at' => now()->addDays(7)]);
             }
         }, 3);
@@ -43,7 +43,7 @@ class GroupMembershipController extends Controller
         abort_unless($groupInvitation->recipient_id === $request->user()->id, 404);
         $group = $groupInvitation->group;
         DB::transaction(function () use ($request, $group, $groupInvitation): void {
-            Group::query()->lockForUpdate()->findOrFail($group->id);
+            $group = Group::query()->lockForUpdate()->findOrFail($group->id);
             $invite = GroupInvitation::query()->whereKey($groupInvitation->id)->lockForUpdate()->firstOrFail();
             abort_unless($invite->recipient_id === $request->user()->id, 404);
             $data = $request->validate(['status' => ['required', 'in:accepted,declined']]);
@@ -55,7 +55,7 @@ class GroupMembershipController extends Controller
 
                 return;
             }
-            if ($invite->expires_at->isPast() || ! $invite->inviter || ! in_array($this->access->role($invite->inviter, $group), ['owner', 'admin'], true)) {
+            if ($invite->expires_at->lessThanOrEqualTo(now()) || ! $invite->inviter || ! in_array($this->access->role($invite->inviter, $group), ['owner', 'admin'], true)) {
                 throw ValidationException::withMessages(['invitation' => 'This invitation is no longer available. Ask a group manager for a new one.']);
             }
             if ($data['status'] === 'accepted') {
