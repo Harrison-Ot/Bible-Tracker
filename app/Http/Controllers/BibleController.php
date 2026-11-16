@@ -65,6 +65,7 @@ class BibleController extends Controller
         }
 
         return Inertia::render('read', [
+            'today' => today()->toDateString(),
             'chapterCount' => $catalogBook['chapters'] ?? $chapter,
             'bookId' => $bookId,
             'chapter' => $chapter,
