@@ -1,6 +1,8 @@
 import { Link } from '@inertiajs/react';
 import {
     Bell,
+    ChartNoAxesCombined,
+    Bookmark,
     BookOpenCheck,
     LayoutGrid,
     MessageCircle,
@@ -40,6 +42,11 @@ const mainNavItems: NavItem[] = [
         icon: NotebookText,
     },
     {
+        title: 'Saved verses',
+        href: '/saved-verses',
+        icon: Bookmark,
+    },
+    {
         title: 'Reading journal',
         href: '/journal',
         icon: NotebookText,
@@ -48,6 +55,16 @@ const mainNavItems: NavItem[] = [
         title: 'Reading Plans',
         href: readingPlansIndex(),
         icon: BookOpenCheck,
+    },
+    {
+        title: 'Reading progress',
+        href: '/reports',
+        icon: ChartNoAxesCombined,
+    },
+    {
+        title: 'Reading groups',
+        href: '/groups',
+        icon: UsersRound,
     },
     {
         title: 'Members',
