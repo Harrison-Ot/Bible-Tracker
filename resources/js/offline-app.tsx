@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import AppLogoIcon from '@/components/app-logo-icon';
 import OfflineLibrary from '@/components/offline-library';
 
 createRoot(document.getElementById('offline-app')!).render(
@@ -8,8 +9,9 @@ createRoot(document.getElementById('offline-app')!).render(
             <header className="space-y-3">
                 <a
                     href="/downloads"
-                    className="text-primary text-sm font-medium hover:underline"
+                    className="text-primary inline-flex items-center gap-2 text-sm font-medium hover:underline"
                 >
+                    <AppLogoIcon className="size-7" />
                     Bible Tracker
                 </a>
                 <p className="text-primary text-xs font-semibold tracking-widest uppercase">
