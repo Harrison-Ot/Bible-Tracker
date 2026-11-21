@@ -1,7 +1,17 @@
-import type { SVGAttributes } from 'react';
+import type { ImgHTMLAttributes } from 'react';
+import { cn } from '@/lib/utils';
 
-export default function AppLogoIcon(props: SVGAttributes<SVGElement>) {
+export default function AppLogoIcon({
+    className,
+    alt = '',
+    ...props
+}: ImgHTMLAttributes<HTMLImageElement>) {
     return (
-       <img src="/images/high-resolution-logo-grayscale.svg" alt="Logo" className="h-8 w-auto" />
+        <img
+            {...props}
+            src="/pwa-icon.svg"
+            alt={alt}
+            className={cn('size-8 shrink-0 object-contain', className)}
+        />
     );
 }
