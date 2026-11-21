@@ -1,7 +1,7 @@
 import { Link, router } from '@inertiajs/react';
 import { useRef, type MouseEvent } from 'react';
 import { setLoggingOwner } from '@/lib/offline-db';
-import { LogOut, Settings } from 'lucide-react';
+import { LogOut, UserRoundPen } from 'lucide-react';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -59,8 +59,8 @@ export function UserMenuContent({ user }: Props) {
                         prefetch
                         onClick={cleanup}
                     >
-                        <Settings className="mr-2" />
-                        Settings
+                        <UserRoundPen className="mr-2" />
+                        View &amp; edit profile
                     </Link>
                 </DropdownMenuItem>
             </DropdownMenuGroup>
