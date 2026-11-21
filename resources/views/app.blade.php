@@ -30,9 +30,9 @@
             }
         </style>
 
-        <link rel="icon" href="/favicon.ico" sizes="any">
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+        <link rel="icon" href="/favicon.ico?v=3" sizes="any">
+        <link rel="icon" href="/pwa-icon.svg?v=3" type="image/svg+xml">
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3">
         <link rel="manifest" href="/manifest.webmanifest">
         <meta name="theme-color" content="#315c45">
         <meta name="mobile-web-app-capable" content="yes">
