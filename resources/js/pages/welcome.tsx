@@ -1,7 +1,8 @@
+import AppLogoIcon from '@/components/app-logo-icon';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { dashboard, login, register } from '@/routes';
 
-// A tiny deterministic "contribution square" grid, reused as logomark + hero visual.
+// A deterministic contribution grid previews the reading tracker.
 // Intensity 0-4 maps to the green scale, just like the real tracker will render.
 const GRID_PATTERN: number[][] = [
     [1, 2, 0, 3, 1, 4, 2, 0, 1, 3, 2, 4],
@@ -21,16 +22,6 @@ const SQUARE_TONE: Record<number, string> = {
     4: 'bg-[#153D1D]',
 };
 
-function LogoMark({ size = 'h-6 w-6' }: { size?: string }) {
-    return (
-        <div className={`grid grid-cols-3 grid-rows-3 gap-[2px] ${size}`}>
-            {[3, 1, 4, 0, 2, 3, 4, 1, 2].map((v, i) => (
-                <span key={i} className={`rounded-[1px] ${SQUARE_TONE[v]}`} />
-            ))}
-        </div>
-    );
-}
-
 function ContributionGraph() {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
 
@@ -45,7 +36,10 @@ function ContributionGraph() {
                 {GRID_PATTERN.map((row, r) => (
                     <div key={r} className="flex gap-[3px]">
                         {row.map((v, c) => (
-                            <span key={c} className={`h-3.5 w-3.5 rounded-[2px] ${SQUARE_TONE[v]}`} />
+                            <span
+                                key={c}
+                                className={`h-3.5 w-3.5 rounded-[2px] ${SQUARE_TONE[v]}`}
+                            />
                         ))}
                     </div>
                 ))}
@@ -55,7 +49,10 @@ function ContributionGraph() {
                 <div className="flex items-center gap-1">
                     <span>Less</span>
                     {[0, 1, 2, 3, 4].map((v) => (
-                        <span key={v} className={`h-2.5 w-2.5 rounded-[2px] ${SQUARE_TONE[v]}`} />
+                        <span
+                            key={v}
+                            className={`h-2.5 w-2.5 rounded-[2px] ${SQUARE_TONE[v]}`}
+                        />
                     ))}
                     <span>More</span>
                 </div>
@@ -72,7 +69,7 @@ interface Feature {
 const FEATURES: Feature[] = [
     {
         title: 'A streak worth protecting',
-        body: "Every chapter you log fills in a square. Miss a day and the streak resets — same pressure that keeps a coding streak alive, pointed at your reading habit instead.",
+        body: 'Every chapter you log fills in a square. Miss a day and the streak resets — same pressure that keeps a coding streak alive, pointed at your reading habit instead.',
     },
     {
         title: 'Your WhatsApp group, kept honest',
@@ -95,19 +92,28 @@ export default function Welcome() {
         <>
             <Head title="Welcome">
                 <link rel="preconnect" href="https://fonts.googleapis.com" />
-                <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+                <link
+                    rel="preconnect"
+                    href="https://fonts.gstatic.com"
+                    crossOrigin="anonymous"
+                />
                 <link
                     href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap"
                     rel="stylesheet"
                 />
             </Head>
 
-            <div className="min-h-screen bg-[#F6F8F3] text-[#16241A]" style={{ fontFamily: 'Inter, sans-serif' }}>
+            <div
+                className="min-h-screen bg-[#F6F8F3] text-[#16241A]"
+                style={{ fontFamily: 'Inter, sans-serif' }}
+            >
                 {/* Navbar */}
                 <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-6">
                     <Link href="/" className="flex items-center gap-2">
-                        <LogoMark />
-                        <span className="text-sm font-medium tracking-tight">Bible Tracker</span>
+                        <AppLogoIcon className="size-6" />
+                        <span className="text-sm font-medium tracking-tight">
+                            Bible Tracker
+                        </span>
                     </Link>
 
                     <nav className="flex items-center gap-3 text-sm">
@@ -147,8 +153,9 @@ export default function Welcome() {
                             Read scripture like you ship code.
                         </h1>
                         <p className="mt-6 text-lg leading-relaxed text-[#3E4A3F]">
-                            Log every chapter you read, watch the squares fill in, and keep your
-                            reading group honest — right inside the WhatsApp chat you already use.
+                            Log every chapter you read, watch the squares fill
+                            in, and keep your reading group honest — right
+                            inside the WhatsApp chat you already use.
                         </p>
                         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
                             <Link
@@ -172,7 +179,10 @@ export default function Welcome() {
                 </section>
 
                 {/* How it works */}
-                <section id="how-it-works" className="border-t border-[#D9E3D3] bg-white/50 py-20">
+                <section
+                    id="how-it-works"
+                    className="border-t border-[#D9E3D3] bg-white/50 py-20"
+                >
                     <div className="mx-auto w-full max-w-5xl px-6">
                         <h2
                             className="max-w-md text-3xl font-medium tracking-tight"
@@ -200,9 +210,15 @@ export default function Welcome() {
                                 },
                             ].map((s) => (
                                 <div key={s.step}>
-                                    <span className="text-sm text-[#8FA491]">{s.step}</span>
-                                    <h3 className="mt-2 text-lg font-medium">{s.title}</h3>
-                                    <p className="mt-2 text-sm leading-relaxed text-[#5B6B5D]">{s.body}</p>
+                                    <span className="text-sm text-[#8FA491]">
+                                        {s.step}
+                                    </span>
+                                    <h3 className="mt-2 text-lg font-medium">
+                                        {s.title}
+                                    </h3>
+                                    <p className="mt-2 text-sm leading-relaxed text-[#5B6B5D]">
+                                        {s.body}
+                                    </p>
                                 </div>
                             ))}
                         </div>
@@ -221,9 +237,16 @@ export default function Welcome() {
 
                         <div className="mt-12 divide-y divide-[#D9E3D3] border-t border-[#D9E3D3]">
                             {FEATURES.map((f) => (
-                                <div key={f.title} className="grid gap-2 py-8 sm:grid-cols-3 sm:gap-8">
-                                    <h3 className="text-lg font-medium">{f.title}</h3>
-                                    <p className="text-sm leading-relaxed text-[#5B6B5D] sm:col-span-2">{f.body}</p>
+                                <div
+                                    key={f.title}
+                                    className="grid gap-2 py-8 sm:grid-cols-3 sm:gap-8"
+                                >
+                                    <h3 className="text-lg font-medium">
+                                        {f.title}
+                                    </h3>
+                                    <p className="text-sm leading-relaxed text-[#5B6B5D] sm:col-span-2">
+                                        {f.body}
+                                    </p>
                                 </div>
                             ))}
                         </div>
@@ -233,18 +256,27 @@ export default function Welcome() {
                 {/* Verse pull-quote */}
                 <section className="border-y border-[#D9E3D3] bg-[#153D1D] py-20 text-[#F6F8F3]">
                     <div className="mx-auto max-w-2xl px-6 text-center">
-                        <p className="text-2xl leading-relaxed font-medium" style={{ fontFamily: 'Fraunces, serif' }}>
-                            "This book of the law shall not depart out of thy mouth; but thou shalt
-                            meditate therein day and night."
+                        <p
+                            className="text-2xl leading-relaxed font-medium"
+                            style={{ fontFamily: 'Fraunces, serif' }}
+                        >
+                            "This book of the law shall not depart out of thy
+                            mouth; but thou shalt meditate therein day and
+                            night."
                         </p>
-                        <p className="mt-4 text-sm text-[#B7DDB0]">Joshua 1:8, KJV</p>
+                        <p className="mt-4 text-sm text-[#B7DDB0]">
+                            Joshua 1:8, KJV
+                        </p>
                     </div>
                 </section>
 
                 {/* Closing CTA */}
                 <section className="py-20">
                     <div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-6 px-6 text-center">
-                        <h2 className="max-w-lg text-3xl font-medium tracking-tight" style={{ fontFamily: 'Fraunces, serif' }}>
+                        <h2
+                            className="max-w-lg text-3xl font-medium tracking-tight"
+                            style={{ fontFamily: 'Fraunces, serif' }}
+                        >
                             Your first square is one chapter away
                         </h2>
                         <Link
@@ -259,7 +291,7 @@ export default function Welcome() {
                 <footer className="border-t border-[#D9E3D3] py-8">
                     <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 text-xs text-[#5B6B5D]">
                         <div className="flex items-center gap-2">
-                            <LogoMark size="h-4 w-4" />
+                            <AppLogoIcon className="size-4" />
                             <span>Bible Tracker</span>
                         </div>
                         <span>Built to be read, not scrolled.</span>
