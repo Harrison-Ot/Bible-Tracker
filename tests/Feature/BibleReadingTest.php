@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Services\ReadingMusic;
 use Illuminate\Support\Facades\Http;
 
 test('plan passage links resolve book names to the Bible provider ids', function () {
@@ -45,4 +46,12 @@ test('malformed translation query is rejected without calling the provider', fun
     Http::fake();
     $this->actingAs(User::factory()->create())->get('/bible?translation[]=web')->assertSessionHasErrors('translation');
     Http::assertNothingSent();
+});
+
+test('reader receives the server managed music library', function () {
+    Http::fake(['bible-api.com/*' => Http::response(['verses' => []])]);
+    $songs = [['id' => 'grace.mp3', 'title' => 'Grace', 'url' => '/songs/grace.mp3']];
+    $this->mock(ReadingMusic::class)->shouldReceive('songs')->once()->andReturn($songs);
+    $this->actingAs(User::factory()->create())->get('/bible/JUD/1')
+        ->assertOk()->assertInertia(fn ($page) => $page->where('songs', $songs));
 });
