@@ -178,3 +178,19 @@ Status: [ ] planned, [x] complete. Phases 1-6 are implemented and verified with 
 - Replaced the direct console action with `wscript.exe //B //NoLogo` and `scripts/run-scheduler-hidden.wsf`. The windowless host launches the existing runner with window style 0 and waits for its exit code. Updated the installer so reinstalling preserves this fix.
 - Re-enabled the task and observed no visible runner windows during the verification run. Subsequent automatic runs updated `storage/logs/scheduler.log` with successful exit 0. Daily 19:00 Africa/Nairobi reminders remain enabled; no additional test emails were sent.
 - Verified installer PowerShell parsing, launcher XML parsing, task action and real scheduler execution. Application PHP and reminder timing logic were unchanged; no further application test run was needed for this launcher-only fix.
+
+
+## Reading music (2026-11-21)
+- Added a server-discovered audio library in `public/songs/`. Supported audio filenames become natural-sort song titles; URLs are encoded. Hidden files, non-audio files, subfolders and symbolic links are ignored. Empty or missing libraries return no songs.
+- Added the reader song selector and native audio controls with explicit playback, no preload, and playback-error feedback. Starting songs cancels chapter narration; starting or resuming narration pauses music. Changing songs and leaving the reader pause audio. Stale speech callbacks cannot reset a newer narration session.
+- Documented adding/deploying public song files in README. No database migration, upload endpoint, dependency or sample song was added.
+- Targeted PHP tests passed (6 tests, 40 assertions), TypeScript and changed frontend lint passed, production build passed, and PHP static analysis passed with zero errors.
+- Headless Chrome checks used synthetic page data, a generated WAV and mocked speech synthesis: song/narration mutual exclusion, narration pause/resume, song switching, playback failure feedback, navigation cleanup, empty library and mobile/desktop layouts. This does not establish real speech-engine or physical-device codec behavior. Review runner/screenshots are in ignored `storage/app/private/ui-review/music-review.mjs` and `storage/app/private/music-review/`.
+
+- Full regression suite: 183 passed, 4 skipped (1,537 assertions across 187 tests). Disabled external SSR calls in the shared HTTP test setup after the running local Vite server caused five unrelated stray-request failures; application SSR configuration was unchanged. Final whitespace checks passed.
+
+
+## Continuous reading music (2026-11-21)
+- Previous/next chapter links preserve reader state and the existing audio element. Chapter changes still cancel the old chapter narration, but do not pause or restart a song. Paused songs keep their position while navigating.
+- Added an explicit Stop song button that pauses and rewinds. Narration still pauses music, and leaving the reader releases playback.
+- TypeScript, changed frontend lint, production build and whitespace checks passed. Headless Chrome with real generated WAV playback and mocked speech confirmed both chapter directions, audio identity/time preservation, paused-state preservation, Stop song, mutual exclusion and leaving-reader cleanup. Runner: ignored `storage/app/private/ui-review/continuous-music-review.mjs`.

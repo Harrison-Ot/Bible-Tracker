@@ -137,3 +137,12 @@ Get-Content storage/logs/scheduler.log -Tail 20
 ```
 
 The task persists across restarts but runs only while that Windows account is signed in and the PC is awake. Existing reminder timing permits a delay of less than 15 minutes; later missed windows are skipped. Use the deployment's normal once-per-minute scheduler on an always-on host when delivery must continue while this PC is off. `APP_URL` must point to that deployment for links in email to work from other devices. Windows task output and the reminder delivery table diagnose execution and send attempts; only inbox confirmation establishes actual receipt.
+
+
+## Reading music
+
+Add your audio files directly to `public/songs/` (for example `public/songs/Amazing-Grace.mp3`). MP3 is recommended for broad browser support; M4A, OGG, WAV, AAC, FLAC, OPUS and WEBM files are also listed, with playback depending on the browser and codec. Subfolders and hidden files are ignored. File names become song titles, with hyphens and underscores displayed as spaces.
+
+Reload a chapter to see new songs. No database migration, upload screen or frontend rebuild is needed when adding songs. Include the audio folder when deploying, or preserve it as persistent server storage if managing files directly on the host. These files are public at `/songs/...`; only place audio there that you intend to share publicly and have permission to distribute.
+
+The reader offers a song selector and native play/pause, seek and volume controls. Playback starts only after the reader presses Play. Starting a song stops chapter narration; starting or resuming narration pauses the song. Changing songs pauses the old track. Previous/next chapter navigation keeps the same song playing at its current position. Pause uses the native audio controls; Stop song pauses and rewinds it. Leaving the reader stops audio. Song files are streamed separately and are not part of offline chapter downloads.
