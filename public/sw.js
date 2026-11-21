@@ -1,4 +1,4 @@
-const STATIC_CACHE = 'bible-tracker-static-v2';
+const STATIC_CACHE = 'bible-tracker-static-v3';
 const OFFLINE_PREFIX = 'bible-tracker-offline-v2-';
 const BASE_FILES = ['/offline.html', '/pwa-icon.svg', '/pwa-icon-maskable.svg'];
 let preparing;
