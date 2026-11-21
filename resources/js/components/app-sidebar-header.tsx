@@ -1,3 +1,4 @@
+import UserProfileMenu from '@/components/user-profile-menu';
 import { Link } from '@inertiajs/react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Breadcrumbs } from '@/components/breadcrumbs';
@@ -21,6 +22,9 @@ export function AppSidebarHeader({
                     <AppLogoIcon className="size-7" />
                 </Link>
                 <Breadcrumbs breadcrumbs={breadcrumbs} />
+            </div>
+            <div className="ml-auto hidden shrink-0 md:block">
+                <UserProfileMenu />
             </div>
         </header>
     );
