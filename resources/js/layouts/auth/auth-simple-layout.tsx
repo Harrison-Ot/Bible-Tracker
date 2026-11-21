@@ -13,7 +13,7 @@ export default function AuthSimpleLayout({
     const isLogin = variant === 'login';
 
     return (
-        <main className="min-h-svh bg-background lg:grid lg:grid-cols-2">
+        <main className="bg-background min-h-svh lg:grid lg:grid-cols-2">
             <section
                 className={cn(
                     'relative hidden min-h-svh overflow-hidden bg-[#e9f2e7] lg:block',
@@ -29,16 +29,16 @@ export default function AuthSimpleLayout({
                 <div className="absolute inset-0 bg-gradient-to-t from-[#173c2a]/75 via-[#173c2a]/10 to-transparent" />
                 <Link
                     href={home()}
-                    className="absolute left-10 top-10 z-10 flex items-center gap-3 rounded-full border border-white/30 bg-white/15 px-4 py-2 text-sm font-semibold text-white shadow-sm backdrop-blur-md"
+                    className="absolute top-10 left-10 z-10 flex items-center gap-3 rounded-full border border-white/30 bg-white/15 px-4 py-2 text-sm font-semibold text-white shadow-sm backdrop-blur-md"
                 >
                     <AppLogoIcon className="size-7" />
                     <span>BibleTracker</span>
                 </Link>
                 <div className="absolute inset-x-0 bottom-0 z-10 p-10 text-white xl:p-14">
-                    <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-white/75">
+                    <p className="mb-4 text-sm font-semibold tracking-[0.2em] text-white/75 uppercase">
                         Read. Reflect. Grow.
                     </p>
-                    <p className="max-w-xl text-3xl font-semibold leading-tight xl:text-4xl">
+                    <p className="max-w-xl text-3xl leading-tight font-semibold xl:text-4xl">
                         Build a steady rhythm in the Word, one day at a time.
                     </p>
                     <p className="mt-4 max-w-lg text-sm leading-6 text-white/80">
@@ -59,20 +59,20 @@ export default function AuthSimpleLayout({
                         href={home()}
                         className="mb-10 flex items-center gap-3 lg:hidden"
                     >
-                        <AppLogoIcon className="size-9 rounded-md bg-primary p-1.5" />
+                        <AppLogoIcon className="size-9" />
                         <span className="text-base font-semibold tracking-tight">
                             BibleTracker
                         </span>
                     </Link>
 
                     <div className="mb-8 space-y-2">
-                        <p className="text-sm font-semibold uppercase tracking-[0.16em] text-primary">
+                        <p className="text-primary text-sm font-semibold tracking-[0.16em] uppercase">
                             {isLogin ? 'Welcome back' : 'Join the community'}
                         </p>
                         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
                             {title}
                         </h1>
-                        <p className="text-sm leading-6 text-muted-foreground">
+                        <p className="text-muted-foreground text-sm leading-6">
                             {description}
                         </p>
                     </div>
