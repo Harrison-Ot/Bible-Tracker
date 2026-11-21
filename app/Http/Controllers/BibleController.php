@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\BibleCatalog;
 use App\Services\BibleService;
+use App\Services\ReadingMusic;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -35,7 +36,7 @@ class BibleController extends Controller
         ]);
     }
 
-    public function show(Request $request, string $bookId, int $chapter, BibleService $bible): Response
+    public function show(Request $request, string $bookId, int $chapter, BibleService $bible, ReadingMusic $music): Response
     {
         $translation = $request->validate([
             'translation' => ['sometimes', 'string', 'max:30', 'regex:/^[a-z0-9_-]+$/'],
@@ -65,6 +66,7 @@ class BibleController extends Controller
         }
 
         return Inertia::render('read', [
+            'songs' => $music->songs(),
             'today' => today()->toDateString(),
             'chapterCount' => $catalogBook['chapters'] ?? $chapter,
             'bookId' => $bookId,
