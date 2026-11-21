@@ -115,3 +115,25 @@ Pending logs sync when that same account returns to an authenticated app page or
 The server requires a verified matching account, CSRF protection, a valid canonical WEB passage and a nonfuture date in the application's calendar. Date conflicts remain pending for review/retry; dates are not silently changed. Network/session/server failures retain the queue. Validation/conflict failures require explicit retry. Durable account/operation/payload receipts make acknowledgements safe to replay, including after a lost response or deletion of a previously confirmed journal entry. A matching existing online chapter/date entry is reused without changing its reflection. Receipts are removed with the account.
 
 Run pending migrations when updating and deploy the production build so `/build/manifest.json`, hashed assets, `/offline` and `/sw.js` are available. Service workers require HTTPS outside localhost. Use a production build for offline review; a development-server shell is not confirmed as ready. The public offline shell is prepared with credentials omitted. Cache storage includes the public shell/build assets/icons, never account HTML/JSON, avatars or mutation responses. Physical-device and production-network smoke checks remain separate from the automated Chrome review.
+
+## Windows reminder scheduling
+
+Reminder settings must be explicitly enabled at `/settings/reminders`. The local instance was configured on 2026-11-16 for a daily 19:00 Africa/Nairobi reminder, and a separate live test reached the user's inbox. Other accounts remain opt-in. Mail delivery uses the configured SMTP credentials; `MAIL_TIMEOUT` defaults to 15 seconds.
+
+Install the persistent scheduler for this workspace from PowerShell:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-reminder-scheduler.ps1 -PhpPath C:\xampp\php\php.exe
+```
+
+The default task name is `BibleTracker-ReadingReminders`. Use `-TaskName` for another workspace. The installer resolves the PHP executable and workspace paths, runs with the current user's limited interactive token, and does not store a Windows password. It refuses to replace a task assigned to a different project. Its windowless Windows Script Host action starts the PowerShell runner hidden from creation, avoiding the recurring console flash. It waits for the runner and preserves its exit code. Laravel's scheduler runs every minute; the queue listener alone does not run scheduled reminders.
+
+Inspect it with:
+
+```powershell
+Get-ScheduledTask -TaskName BibleTracker-ReadingReminders
+Get-ScheduledTaskInfo -TaskName BibleTracker-ReadingReminders
+Get-Content storage/logs/scheduler.log -Tail 20
+```
+
+The task persists across restarts but runs only while that Windows account is signed in and the PC is awake. Existing reminder timing permits a delay of less than 15 minutes; later missed windows are skipped. Use the deployment's normal once-per-minute scheduler on an always-on host when delivery must continue while this PC is off. `APP_URL` must point to that deployment for links in email to work from other devices. Windows task output and the reminder delivery table diagnose execution and send attempts; only inbox confirmation establishes actual receipt.

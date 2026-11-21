@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<job id="BibleTrackerReminderScheduler">
+    <script language="JScript"><![CDATA[
+        // A GUI script host avoids the initial console flash from powershell.exe.
+        // Wait for completion so Task Scheduler receives the runner's exit code.
+        try {
+            if (WScript.Arguments.length !== 2) WScript.Quit(64);
+            var files = new ActiveXObject("Scripting.FileSystemObject");
+            var shell = new ActiveXObject("WScript.Shell");
+            var runner = files.GetAbsolutePathName(WScript.Arguments.Item(0));
+            var php = files.GetAbsolutePathName(WScript.Arguments.Item(1));
+            if (!files.FileExists(runner) || !files.FileExists(php)) WScript.Quit(66);
+            var powershell = shell.ExpandEnvironmentStrings("%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe");
+            shell.CurrentDirectory = files.GetParentFolderName(files.GetParentFolderName(runner));
+            var command = '"' + powershell + '" -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "' + runner + '" -PhpPath "' + php + '"';
+            WScript.Quit(shell.Run(command, 0, true));
+        } catch (error) {
+            WScript.Quit(1);
+        }
+    ]]></script>
+</job>

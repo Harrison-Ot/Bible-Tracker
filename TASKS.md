@@ -2,7 +2,7 @@
 
 Updated: 2026-11-16
 
-Status: [ ] planned, [x] complete. Phases 1-6 are implemented and verified with automated checks and synthetic browser data. Physical-device/live-data review and host reminder delivery setup remain planned.
+Status: [ ] planned, [x] complete. Phases 1-6 are implemented and verified with automated checks and synthetic browser data. Physical-device review and an always-on production scheduler remain planned. Current Windows reminder scheduling and real inbox delivery are verified.
 
 ## Phase 1 - Daily reading experience (complete)
 - [x] Redesign the dashboard around Continue Reading, compact statistics, and today's plans.
@@ -28,10 +28,11 @@ Status: [ ] planned, [x] complete. Phases 1-6 are implemented and verified with 
 - [x] Prevent duplicate community submissions and recover buttons after validation, HTTP and network failures.
 - [ ] Perform physical-device and live-data smoke review, including browser audio, email delivery and mobile keyboard/safe-area behavior.
 
-## Phase 3 - Reminders and saved verses (features complete; deployment verification pending)
+## Phase 3 - Reminders and saved verses (local delivery verified; production host pending)
 - [x] Store reminder time, timezone, reading days and opt-in preferences, with verified-account settings and validation.
 - [x] Schedule email reminders with per-local-date duplicate prevention, dry-run support, and signed unsubscribe confirmation.
-- [ ] Configure and verify the deployment scheduler and mail transport with a controlled live-delivery check.
+- [x] Configure the local Windows scheduler and verify real Gmail delivery with a controlled inbox-confirmed test.
+- [ ] Configure an always-on production scheduler for delivery when this development PC is off or signed out.
 - [x] Sync highlights and bookmarks to each user's account, separately per translation.
 - [x] Import existing device highlights explicitly by chapter and chosen translation, without duplicates or deleting originals.
 - [x] Add a private saved-verses library with passage/text search, book/type/translation filters, pagination and removal.
@@ -161,3 +162,19 @@ Status: [ ] planned, [x] complete. Phases 1-6 are implemented and verified with 
 - Browser review used real Chrome service workers, Cache Storage and IndexedDB with synthetic accounts and mocked API responses. Checks covered both themes at 320/390/1440px, cold disconnected reloads, offline Inertia navigation, translation selection, pending-log deduplication, ambiguous responses/retries, account switching, validation/session recovery, chapter/byte/queue limits, download removal, device reset, blocked storage and sign-out.
 - Browser screenshots/report: `storage/app/private/phase-six-review/`; local runner: `storage/app/private/ui-review/phase-six-review.mjs` (ignored by Git). These results do not establish physical-device/browser-specific storage eviction or production delivery behavior.
 - Applied migration `2026_11_16_000006_create_offline_reading_receipts_table` to the configured database. Automated verification created no live-account downloads, queued logs, journal entries, messages or emails; provider calls in backend tests were faked.
+
+## Reminder email delivery repair (2026-11-16)
+- Root causes on the configured local instance: no reminder preferences existed for the sole account, and neither a scheduler process nor a Windows scheduled task was running. The queue listener does not replace the scheduler. Gmail SMTP was already correctly configured and authenticated successfully; no credentials were changed or printed.
+- At the user's request, enabled daily reminders at 19:00 in Africa/Nairobi for the sole verified account, including all seven weekdays. A separate reminder delivery test was accepted by Gmail SMTP and the user confirmed it arrived in Inbox. That test did not claim or consume the scheduled daily delivery.
+- Installed the hidden Windows task `BibleTracker-ReadingReminders`, running `schedule:run` every minute with `C:\xampp\php\php.exe`, the workspace as its working directory, the current user's interactive token and limited privileges. The trigger repeats indefinitely; it persists across restarts. Task state/last result were verified (`Ready`, exit 0), including subsequent automatic executions.
+- Added reproducible `scripts/install-reminder-scheduler.ps1` and `scripts/run-scheduler.ps1`. The installer refuses to replace a task belonging to another project. Executions are hidden, overlapping task instances are ignored, and output is written under ignored `storage/logs/scheduler.log`.
+- The current task runs while this Windows user is signed in and the PC is awake. It is not an always-on production host. Missed reminder windows retain the existing 15-minute policy rather than sending hours late. Hosting/scheduling on an always-on deployment remains open.
+- Added a bounded SMTP timeout (`MAIL_TIMEOUT`, default 15 seconds). No mail passwords or other secrets were added to tracked files.
+- `php artisan test --compact tests/Feature/ReadingReminderTest.php`: all 16 tests passed, 118 assertions. Both PowerShell scripts parsed successfully and the installed runner executed successfully. Diff whitespace and targeted PHP formatting checks passed.
+- Verified the saved real schedule with a future-time dry run: exactly one reminder due at 2026-11-16 19:00 Africa/Nairobi; zero daily-delivery records were created by the check. Next scheduled reminder remains available for its actual delivery time.
+
+## Reminder scheduler window fix (2026-11-16)
+- Paused the every-minute Windows reminder task after the user reported recurring PowerShell windows. Other PowerShell sessions were not stopped.
+- Replaced the direct console action with `wscript.exe //B //NoLogo` and `scripts/run-scheduler-hidden.wsf`. The windowless host launches the existing runner with window style 0 and waits for its exit code. Updated the installer so reinstalling preserves this fix.
+- Re-enabled the task and observed no visible runner windows during the verification run. Subsequent automatic runs updated `storage/logs/scheduler.log` with successful exit 0. Daily 19:00 Africa/Nairobi reminders remain enabled; no additional test emails were sent.
+- Verified installer PowerShell parsing, launcher XML parsing, task action and real scheduler execution. Application PHP and reminder timing logic were unchanged; no further application test run was needed for this launcher-only fix.
