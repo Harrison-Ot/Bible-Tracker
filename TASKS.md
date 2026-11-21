@@ -194,3 +194,9 @@ Status: [ ] planned, [x] complete. Phases 1-6 are implemented and verified with 
 - Previous/next chapter links preserve reader state and the existing audio element. Chapter changes still cancel the old chapter narration, but do not pause or restart a song. Paused songs keep their position while navigating.
 - Added an explicit Stop song button that pauses and rewinds. Narration still pauses music, and leaving the reader releases playback.
 - TypeScript, changed frontend lint, production build and whitespace checks passed. Headless Chrome with real generated WAV playback and mocked speech confirmed both chapter directions, audio identity/time preservation, paused-state preservation, Stop song, mutual exclusion and leaving-reader cleanup. Runner: ignored `storage/app/private/ui-review/continuous-music-review.mjs`.
+
+
+## Consistent logo (2026-11-21)
+- Standardized rendered branding on the existing green Bible mark in `public/pwa-icon.svg`. The shared logo now forwards image attributes and size classes. Replaced the welcome-page grid mark and grayscale logo rendering, corrected sidebar/auth sizing, and added the mark to the mobile header and public offline reader.
+- Replaced Laravel favicons and Apple touch artwork with exports of the same Bible mark. Maskable artwork uses the same paths inset for safe cropping. Updated icon metadata and incremented the static service-worker cache for existing installs.
+- TypeScript, changed frontend lint, production build and whitespace checks passed. Headless Chrome confirmed logo loading and mobile/desktop layouts on welcome, login and app pages without uncaught exceptions; review runner/screenshots are under ignored `storage/app/private/ui-review/brand-review.mjs` and `brand-mobile-*.png`.
