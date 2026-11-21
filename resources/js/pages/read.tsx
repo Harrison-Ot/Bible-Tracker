@@ -27,6 +27,7 @@ import { useSavedVerses } from '@/hooks/use-saved-verses';
 import { deviceHighlights, type SavedVerse } from '@/lib/saved-verses';
 import ActionFeedback from '@/components/action-feedback';
 import DownloadChapter from '@/components/download-chapter';
+import ReadingMusic, { type ReadingSong } from '@/components/reading-music';
 import { localToday, loggingOwner, queueReading } from '@/lib/offline-db';
 
 interface Verse {
@@ -44,6 +45,7 @@ interface ReadProps {
     passage: { verses: Verse[] };
     savedVerses: SavedVerse[];
     today?: string;
+    songs?: ReadingSong[];
 }
 
 const readingWidths = {
@@ -62,6 +64,7 @@ export default function Read({
     passage,
     savedVerses,
     today,
+    songs = [],
 }: ReadProps) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const { preferences, updatePreferences, saved } = useReadingPreferences(
@@ -105,6 +108,7 @@ export default function Read({
         return () => window.removeEventListener('keydown', escape);
     }, [focused, setFocused]);
 
+    const musicRef = useRef<HTMLAudioElement | null>(null);
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
     const [activeVerse, setActiveVerse] = useState<number | null>(null);
@@ -118,14 +122,16 @@ export default function Read({
     );
 
     const stopSpeech = () => {
-        if (speechSupported) window.speechSynthesis.cancel();
         utteranceRef.current = null;
+        if (speechSupported) window.speechSynthesis.cancel();
         setIsSpeaking(false);
         setIsPaused(false);
         setActiveVerse(null);
     };
     const startSpeech = () => {
         if (!speechSupported || !fullText) return;
+        musicRef.current?.pause();
+        utteranceRef.current = null;
         window.speechSynthesis.cancel();
         setSpeechError('');
         let offset = 0;
@@ -137,6 +143,7 @@ export default function Read({
         const utterance = new SpeechSynthesisUtterance(fullText);
         utterance.rate = 0.95;
         utterance.onboundary = (event) => {
+            if (utteranceRef.current !== utterance) return;
             const current = boundaries.find(
                 (boundary) =>
                     event.charIndex >= boundary.start &&
@@ -145,11 +152,15 @@ export default function Read({
             if (current) setActiveVerse(current.verse);
         };
         utterance.onend = () => {
+            if (utteranceRef.current !== utterance) return;
+            utteranceRef.current = null;
             setIsSpeaking(false);
             setIsPaused(false);
             setActiveVerse(null);
         };
         utterance.onerror = (event) => {
+            if (utteranceRef.current !== utterance) return;
+            utteranceRef.current = null;
             setIsSpeaking(false);
             setIsPaused(false);
             setActiveVerse(null);
@@ -162,12 +173,16 @@ export default function Read({
         setIsPaused(false);
     };
     useEffect(() => {
+        utteranceRef.current = null;
         window.speechSynthesis?.cancel();
         setIsSpeaking(false);
         setIsPaused(false);
         setActiveVerse(null);
         setSpeechError('');
-        return () => window.speechSynthesis?.cancel();
+        return () => {
+            utteranceRef.current = null;
+            window.speechSynthesis?.cancel();
+        };
     }, [bookId, chapter, translation]);
 
     const [offlineBusy, setOfflineBusy] = useState(false);
@@ -292,16 +307,17 @@ export default function Read({
                                             disabled={!passage.verses.length}
                                         >
                                             <Volume2 aria-hidden="true" />
-                                            Listen
+                                            Listen to chapter
                                         </Button>
                                     ) : (
                                         <>
                                             <Button
                                                 size="sm"
                                                 onClick={() => {
-                                                    if (isPaused)
+                                                    if (isPaused) {
+                                                        musicRef.current?.pause();
                                                         window.speechSynthesis.resume();
-                                                    else
+                                                    } else
                                                         window.speechSynthesis.pause();
                                                     setIsPaused(!isPaused);
                                                 }}
@@ -342,6 +358,11 @@ export default function Read({
                             </p>
                         )}
                     </header>
+                    <ReadingMusic
+                        songs={songs}
+                        audioRef={musicRef}
+                        onPlay={stopSpeech}
+                    />
                     <DownloadChapter
                         bookId={bookId}
                         chapter={chapter}
@@ -591,7 +612,10 @@ export default function Read({
                     >
                         {chapter > 1 ? (
                             <Button asChild variant="outline">
-                                <Link href={passageUrl(chapter - 1)}>
+                                <Link
+                                    href={passageUrl(chapter - 1)}
+                                    preserveState
+                                >
                                     <ArrowLeft aria-hidden="true" />
                                     Chapter {chapter - 1}
                                 </Link>
@@ -601,7 +625,10 @@ export default function Read({
                         )}
                         {chapter < chapterCount ? (
                             <Button asChild variant="outline">
-                                <Link href={passageUrl(chapter + 1)}>
+                                <Link
+                                    href={passageUrl(chapter + 1)}
+                                    preserveState
+                                >
                                     Chapter {chapter + 1}
                                     <ArrowRight aria-hidden="true" />
                                 </Link>
