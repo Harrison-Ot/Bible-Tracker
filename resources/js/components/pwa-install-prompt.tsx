@@ -39,9 +39,14 @@ export default function PwaInstallPrompt({
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton
+                        type="button"
                         onClick={install}
-                        disabled={installing}
-                        tooltip="Install app"
+                        disabled={installing || (!canPrompt && !isIos)}
+                        tooltip={
+                            canPrompt || isIos
+                                ? 'Install Bible Tracker on this device'
+                                : 'Waiting for your browser to make PWA installation available'
+                        }
                     >
                         <Download />
                         <span>

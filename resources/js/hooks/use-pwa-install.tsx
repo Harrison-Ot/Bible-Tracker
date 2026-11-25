@@ -22,6 +22,18 @@ type InstallPromptEvent = Event & {
     }>;
 };
 
+// Capture the browser's one-time event even before React has mounted.
+let pendingInstallPrompt: InstallPromptEvent | null = null;
+if (typeof window !== 'undefined') {
+    window.addEventListener('beforeinstallprompt', (event) => {
+        event.preventDefault();
+        pendingInstallPrompt = event as InstallPromptEvent;
+    });
+    window.addEventListener('appinstalled', () => {
+        pendingInstallPrompt = null;
+    });
+}
+
 const PwaInstallContext = createContext<{
     isInstalled: boolean;
     isIos: boolean;
@@ -53,6 +65,10 @@ export function PwaInstallProvider({ children }: { children: ReactNode }) {
                         window.navigator.standalone === true),
             );
         updateInstalled();
+        if (pendingInstallPrompt) {
+            promptRef.current = pendingInstallPrompt;
+            setCanPrompt(true);
+        }
         const handleInstallAvailable = (event: Event) => {
             event.preventDefault();
             promptRef.current = event as InstallPromptEvent;
@@ -86,6 +102,7 @@ export function PwaInstallProvider({ children }: { children: ReactNode }) {
             return;
         }
         promptRef.current = null;
+        pendingInstallPrompt = null;
         setCanPrompt(false);
         busyRef.current = true;
         setInstalling(true);
