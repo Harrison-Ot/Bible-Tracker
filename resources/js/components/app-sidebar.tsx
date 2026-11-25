@@ -11,6 +11,7 @@ import {
     UsersRound,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
+import PwaInstallPrompt from '@/components/pwa-install-prompt';
 
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -118,6 +119,7 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
+                <PwaInstallPrompt sidebar />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

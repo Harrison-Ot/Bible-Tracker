@@ -3,6 +3,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import PwaInstallPrompt from '@/components/pwa-install-prompt';
 import { ReadingModeProvider } from '@/hooks/use-reading-mode';
+import { PwaInstallProvider } from '@/hooks/use-pwa-install';
 import { initializeTheme } from '@/hooks/use-appearance';
 import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
@@ -29,11 +30,13 @@ void createInertiaApp({
     withApp(app) {
         return (
             <ReadingModeProvider>
-                <TooltipProvider delayDuration={0}>
-                    {app}
-                    <Toaster />
-                    <PwaInstallPrompt />
-                </TooltipProvider>
+                <PwaInstallProvider>
+                    <TooltipProvider delayDuration={0}>
+                        {app}
+                        <Toaster />
+                        <PwaInstallPrompt />
+                    </TooltipProvider>
+                </PwaInstallProvider>
             </ReadingModeProvider>
         );
     },
