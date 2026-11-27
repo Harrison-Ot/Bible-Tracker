@@ -146,3 +146,12 @@ Add your audio files directly to `public/songs/` (for example `public/songs/Amaz
 Reload a chapter to see new songs. No database migration, upload screen or frontend rebuild is needed when adding songs. Include the audio folder when deploying, or preserve it as persistent server storage if managing files directly on the host. These files are public at `/songs/...`; only place audio there that you intend to share publicly and have permission to distribute.
 
 The reader offers a song selector and native play/pause, seek and volume controls. Playback starts only after the reader presses Play. Starting a song stops chapter narration; starting or resuming narration pauses the song. Changing songs pauses the old track. Previous/next chapter navigation keeps the same song playing at its current position. Pause uses the native audio controls; Stop song pauses and rewinds it. Leaving the reader stops audio. Song files are streamed separately and are not part of offline chapter downloads.
+
+
+## Phone installation troubleshooting
+
+The install button opens the browser's native prompt when available; otherwise it offers manual instructions. Automatic prompts are not available in every browser. Production installation requires HTTPS. For iPhone, use Safari's Share menu, Add to Home Screen, and Open as Web App if offered. For Android, use the browser menu's Install app or Add to Home screen option. Links opened inside social or messaging apps may need to be opened in the full browser first.
+
+If Android warns that the app was built for an older Android version, that warning concerns the installed Android package's target SDK. Browser-based installations can generate a WebAPK outside this repository. There is no Android Gradle project or targetSdkVersion setting in this Laravel app, and changing the web manifest does not upgrade a browser-generated package. Update the phone's browser and try installing the HTTPS website in updated Chrome, particularly if Samsung Internet generated the warning. Keep Play Protect enabled. Record the browser/version, Android version and live URL for further diagnosis if it persists.
+
+References: https://developers.google.com/android/play-protect/warning-dev-guidance and https://web.dev/learn/pwa/installation.
