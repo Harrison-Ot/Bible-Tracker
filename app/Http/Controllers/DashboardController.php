@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\BadgeService;
 use App\Services\BibleCatalog;
 use App\Services\StreakService;
 use Carbon\Carbon;
@@ -11,7 +12,7 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function __construct(private StreakService $streaks) {}
+    public function __construct(private StreakService $streaks, private BadgeService $badges) {}
 
     public function index(Request $request): Response
     {
@@ -51,6 +52,7 @@ class DashboardController extends Controller
             ])->values();
 
         return Inertia::render('dashboard', [
+            'earnedBadges' => $this->badges->forUser($user),
             'readingCounts' => $counts,
             'books' => BibleCatalog::books(),
             'today' => today()->toDateString(),
