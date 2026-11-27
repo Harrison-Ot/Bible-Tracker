@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\ReadingEntry;
+use App\Models\UserPlanProgress;
+use App\Services\BadgeService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +27,17 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        ReadingEntry::saved(function (ReadingEntry $entry): void {
+            if ($entry->user) {
+                app(BadgeService::class)->forUser($entry->user);
+            }
+        });
+        UserPlanProgress::saved(function (UserPlanProgress $progress): void {
+            if (($progress->wasRecentlyCreated || $progress->wasChanged('current_day')) && $progress->user) {
+                app(BadgeService::class)->forUser($progress->user);
+            }
+        });
     }
 
     /**
