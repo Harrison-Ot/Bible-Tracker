@@ -1,5 +1,5 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { BookOpen, Check, Target, Trophy } from 'lucide-react';
+import { Check, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,6 +26,9 @@ type Report = {
         url: string;
     }[];
     milestones: {
+        key: string;
+        icon: string;
+        earned: boolean;
         title: string;
         current: number;
         target: number;
@@ -229,24 +232,18 @@ export default function ReadingReports({ report }: { report: Report }) {
                                 className="bg-card space-y-3 rounded-xl border p-5"
                             >
                                 <div className="flex items-start gap-3">
-                                    {milestone.achieved ? (
-                                        <Trophy
-                                            className="text-primary size-5 shrink-0"
-                                            aria-hidden="true"
-                                        />
-                                    ) : (
-                                        <BookOpen
-                                            className="text-muted-foreground size-5 shrink-0"
-                                            aria-hidden="true"
-                                        />
-                                    )}
+                                    <img
+                                        src={milestone.icon}
+                                        alt=""
+                                        className={`size-20 shrink-0 object-contain ${milestone.earned ? '' : 'opacity-35 grayscale'}`}
+                                    />
                                     <h3 className="font-medium">
                                         {milestone.title}
                                     </h3>
                                 </div>
                                 <p className="text-muted-foreground text-sm">
-                                    {milestone.achieved
-                                        ? 'Reached'
+                                    {milestone.earned
+                                        ? 'Badge earned'
                                         : `${Math.min(milestone.current, milestone.target)} of ${milestone.target} ${milestone.unit}`}
                                 </p>
                                 <progress

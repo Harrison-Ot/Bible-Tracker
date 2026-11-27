@@ -1,3 +1,4 @@
+import EarnedBadges, { type EarnedBadge } from '@/components/earned-badges';
 import { Head, Link, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
@@ -17,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import type { Auth } from '@/types';
 
 interface DashboardProps {
+    earnedBadges?: EarnedBadge[];
     readingCounts: Record<string, number>;
     books: BibleBook[];
     today: string;
@@ -40,6 +42,7 @@ interface DashboardProps {
 }
 
 export default function Dashboard({
+    earnedBadges = [],
     readingCounts,
     currentStreak,
     longestStreak,
@@ -78,7 +81,7 @@ export default function Dashboard({
     return (
         <>
             <Head title="Dashboard" />
-            <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-4 sm:p-6 lg:gap-8 lg:p-8">
+            <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-4 pb-28 sm:p-6 lg:gap-8 lg:p-8 lg:pb-28">
                 <header className="flex flex-wrap items-end justify-between gap-3">
                     <div>
                         <p className="text-primary mb-1 text-sm font-medium">
@@ -266,6 +269,7 @@ export default function Dashboard({
                 </section>
                 <ReadingHistory readings={recentReadings} />
             </main>
+            <EarnedBadges badges={earnedBadges} />
         </>
     );
 }
