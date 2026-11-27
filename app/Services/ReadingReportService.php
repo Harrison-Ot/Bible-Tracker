@@ -54,10 +54,10 @@ class ReadingReportService
         $thisWeek = $weeks[array_key_last($weeks)];
         $milestones = [];
         foreach ([1 => 'Your first chapter', 10 => 'Ten chapters', 50 => 'Fifty chapters', 100 => 'One hundred chapters', 250 => 'A growing foundation', 500 => 'Five hundred chapters', $totalChapters => 'The whole Bible'] as $target => $title) {
-            $milestones[] = ['title' => $title, 'current' => $unique, 'target' => $target, 'unit' => 'unique chapters', 'achieved' => $unique >= $target];
+            $milestones[] = ['key' => 'chapters_'.$target, 'icon' => '/badges/chapters-'.$target.'.svg', 'title' => $title, 'current' => $unique, 'target' => $target, 'unit' => 'unique chapters', 'achieved' => $unique >= $target];
         }
-        $milestones[] = ['title' => 'Your first complete book', 'current' => $completedBooks, 'target' => 1, 'unit' => 'books', 'achieved' => $completedBooks >= 1];
-        $milestones[] = ['title' => 'Your first completed plan', 'current' => $completedPlans, 'target' => 1, 'unit' => 'plans', 'achieved' => $completedPlans >= 1];
+        $milestones[] = ['key' => 'first_book', 'icon' => '/badges/first-book.svg', 'title' => 'Your first complete book', 'current' => $completedBooks, 'target' => 1, 'unit' => 'books', 'achieved' => $completedBooks >= 1];
+        $milestones[] = ['key' => 'first_plan', 'icon' => '/badges/first-plan.svg', 'title' => 'Your first completed plan', 'current' => $completedPlans, 'target' => 1, 'unit' => 'plans', 'achieved' => $completedPlans >= 1];
 
         return [
             'uniqueChapters' => $unique, 'totalChapters' => $totalChapters, 'percent' => round($unique / $totalChapters * 100, 1),
