@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\BadgeService;
 use App\Services\BibleCatalog;
 use App\Services\ReadingReportService;
 use Illuminate\Http\RedirectResponse;
@@ -11,9 +12,15 @@ use Inertia\Response;
 
 class ReadingReportController extends Controller
 {
-    public function index(Request $request, ReadingReportService $reports): Response
+    public function index(Request $request, ReadingReportService $reports, BadgeService $badges): Response
     {
-        return Inertia::render('reports', ['report' => $reports->forUser($request->user())]);
+        $report = $reports->forUser($request->user());
+        $earned = array_column($badges->forUser($request->user(), $report), 'key');
+        $report['milestones'] = array_map(fn (array $milestone): array => [...$milestone,
+            'earned' => in_array($milestone['key'], $earned, true),
+        ], $report['milestones']);
+
+        return Inertia::render('reports', ['report' => $report]);
     }
 
     public function updateGoal(Request $request): RedirectResponse
