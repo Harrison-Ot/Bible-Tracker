@@ -42,7 +42,7 @@ export default function PwaInstallPrompt({
                         type="button"
                         onClick={install}
                         disabled={installing}
-                        tooltip="Install Bible Tracker or view installation steps"
+                        tooltip="Install Bible Tracker"
                     >
                         <Download />
                         <span>
@@ -67,7 +67,7 @@ export default function PwaInstallPrompt({
                 <p className="text-muted-foreground text-sm">
                     {isIos
                         ? 'Tap Share, then "Add to Home Screen" to install.'
-                        : 'Quick access from your home screen. No account needed to install.'}
+                        : 'Read from your home screen.'}
                 </p>
             </div>
             <button

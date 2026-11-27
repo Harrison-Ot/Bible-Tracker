@@ -150,7 +150,7 @@ The reader offers a song selector and native play/pause, seek and volume control
 
 ## Phone installation troubleshooting
 
-The install button opens the browser's native prompt when available; otherwise it offers manual instructions. Automatic prompts are not available in every browser. Production installation requires HTTPS. For iPhone, use Safari's Share menu, Add to Home Screen, and Open as Web App if offered. For Android, use the browser menu's Install app or Add to Home screen option. Links opened inside social or messaging apps may need to be opened in the full browser first.
+The install button opens the browser's native PWA prompt directly, without an extra dialog. Browsers without that prompt show a single short message. Automatic prompts are not available in every browser. Production installation requires HTTPS. For iPhone, use Safari's Share menu, Add to Home Screen, and Open as Web App if offered. For Android, use the browser menu's Install app or Add to Home screen option. Links opened inside social or messaging apps may need to be opened in the full browser first.
 
 If Android warns that the app was built for an older Android version, that warning concerns the installed Android package's target SDK. Browser-based installations can generate a WebAPK outside this repository. There is no Android Gradle project or targetSdkVersion setting in this Laravel app, and changing the web manifest does not upgrade a browser-generated package. Update the phone's browser and try installing the HTTPS website in updated Chrome, particularly if Samsung Internet generated the warning. Keep Play Protect enabled. Record the browser/version, Android version and live URL for further diagnosis if it persists.
 
